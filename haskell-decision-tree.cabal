@@ -2,7 +2,7 @@
 -- documentation, see http://haskell.org/cabal/users-guide/
 
 -- The name of the package.
-name:                haskell-webserver
+name:                haskell-decision-tree
 
 -- The package version.  See the Haskell package versioning policy (PVP) 
 -- for standards guiding when and how versions should be incremented.
@@ -46,7 +46,7 @@ build-type:          Simple
 cabal-version:       >=1.10
 
 
-executable haskell-webserver
+executable haskell-decision-tree
   -- .hs or .lhs file containing the Main module.
   main-is:             Main.hs
   
@@ -57,7 +57,7 @@ executable haskell-webserver
   -- other-extensions:    
   
   -- Other library packages from which modules are imported.
-  build-depends:       base >=4.8 && <4.9, warp, wai, http-types, blaze-builder, bytestring, text
+  build-depends:       base >=4.8 && <4.9, warp, wai, http-types, blaze-builder, bytestring, text, aeson, containers
   --warp >=3.0 && <3.1, wai, http-types, blaze-builder, utf8-string
   
   -- Directories containing source files.
