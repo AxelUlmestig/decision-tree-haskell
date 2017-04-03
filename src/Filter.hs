@@ -1,7 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 
-module ParseFilter (
+module Filter (
     Filter(..),
     parseFilter
 ) where

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module ParseFilterTest (
+module FilterTest (
     tests
 ) where
 
@@ -10,7 +10,7 @@ import Test.HUnit
 import Data.Aeson
 import Data.Map (Map, singleton, empty)
 
-import ParseFilter
+import Filter
 
 parse1 = TestCase $ assertBool "match equals string" expression
     where   expression  = parseFilter fil obj           :: Bool

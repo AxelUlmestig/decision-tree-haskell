@@ -1,10 +1,10 @@
 module Main where
 import Test.Framework
 
-import qualified ParseFilterTest
+import qualified FilterTest
 import qualified EntropyTest
 
-tests =     ParseFilterTest.tests ++
+tests =     FilterTest.tests ++
             EntropyTest.tests
 
 main = defaultMain tests
