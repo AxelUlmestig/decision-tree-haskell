@@ -10,12 +10,13 @@ import Data.Aeson
 import Data.Aeson.Types
 import Data.Monoid
 import qualified Data.Map
+import Data.Maybe (fromMaybe)
 
 data Filter = Filter {
     operator    :: String,
     value       :: Value,
     key         :: String
-}
+} deriving (Eq, Show)
 
 instance ToJSON Filter where
     toJSON f = object [
@@ -30,22 +31,12 @@ instance FromJSON Filter where
         key         <- f .: "key"
         return Filter{..}
 
-instance Show Filter where
-    show f = key f ++ " " ++ operator f ++ " '" ++ show (value f) ++ "'"
-
-instance Eq Filter where
-    (==) f1 f2 = (operator f1 == operator f2) && (value f1 == value f2) && (key f1 == key f2)
-
-mbBool :: Maybe Bool -> Bool
-mbBool (Just True)  = True
-mbBool _            = False
-
 parseFilter :: Filter -> Data.Map.Map String Value -> Bool
 parseFilter f values
-    | operator f == "="     = mbBool $ (==) <$> Data.Map.lookup (key f) values <*> return (value f)
-    | operator f == "!="    = mbBool $ (/=) <$> Data.Map.lookup (key f) values <*> return (value f)
-    | operator f == "<"     = mbBool $ (<) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
-    | operator f == ">"     = mbBool $ (<) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
+    | operator f == "="     = fromMaybe False . fmap (== value f) . Data.Map.lookup (key f) $ values
+    | operator f == "!="    = fromMaybe False . fmap (/= value f) . Data.Map.lookup (key f) $ values
+    | operator f == "<"     = fromMaybe False $ (<) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
+    | operator f == ">"     = fromMaybe False $ (>) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
     | otherwise             = False
 
 parseString :: Value -> Maybe String
