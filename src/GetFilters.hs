@@ -9,13 +9,8 @@ import qualified Data.Map
 import qualified Data.Set
 import qualified Data.List
 import Data.Aeson
-import qualified Data.ByteString.Lazy as LazyBS
-import qualified Data.ByteString.Lazy.Char8 as C8
 
-import ParseFilter
-
-decodeMapList :: LazyBS.ByteString -> Maybe [Data.Map.Map String Value]
-decodeMapList = decode
+import Filter
 
 instance Ord Value where
     compare v1 v2 = compare (show v1) (show v2)
@@ -61,8 +56,3 @@ bindParametersToFilters = foldl (++) [] . mapWithKey applyKey
 
 getFilters :: [Data.Map.Map String Value] -> [Filter]
 getFilters = bindParametersToFilters . filtersFromDataTypes . sortValues
-
-{- main function -}
-
-str = "[{ \"a\": \"hello\", \"b\": 1, \"c\": 2 }, { \"a\": \"world\", \"b\": 1 }]"
-main = putStrLn . show . fmap getFilters . decodeMapList $ str

@@ -12,7 +12,7 @@ import Data.Monoid
 import qualified Data.Map
 import Data.Maybe (fromMaybe)
 
-data Filter = Filter {
+data Filter = NullFilter | Filter {
     operator    :: String,
     value       :: Value,
     key         :: String
@@ -32,6 +32,7 @@ instance FromJSON Filter where
         return Filter{..}
 
 parseFilter :: Filter -> Data.Map.Map String Value -> Bool
+parseFilter NullFilter _ = True
 parseFilter f values
     | operator f == "="     = fromMaybe False . fmap (== value f) . Data.Map.lookup (key f) $ values
     | operator f == "!="    = fromMaybe False . fmap (/= value f) . Data.Map.lookup (key f) $ values
