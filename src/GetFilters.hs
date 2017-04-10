@@ -41,7 +41,7 @@ getDataType :: [Value] -> String
 getDataType = foldl prioritizeType number . map typeCheck
 
 getTypeFilters :: String -> [Value] -> [String -> Filter]
-getTypeFilters _ = map (Filter "=")
+getTypeFilters _ values = map (Filter "=") values ++ map (Filter "!=") values
 
 filtersFromDataTypes :: Data.Map.Map String [Value] -> Data.Map.Map String [String -> Filter]
 filtersFromDataTypes values = intersectionWith getTypeFilters dataTypes values

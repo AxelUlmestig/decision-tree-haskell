@@ -6,8 +6,9 @@ module Train (
 
 import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
-import Data.List (group, sortBy)
+import Data.List (group, maximumBy)
 import Data.Maybe (fromMaybe)
+import Data.Function (on)
 
 import DecisionTree
 import Filter
@@ -29,9 +30,10 @@ train tData key = if ig > entropyLimit
             failedTData = filter (not . parseFilter fil) tData
 
 bestFilter :: [Map String Value] -> String -> [Filter] -> Filter
-bestFilter tData key = head . sortBy gainedInfo
-    where   gainedInfo f1 f2    = compare (filteredEntropy f1) (filteredEntropy f2)
-            filteredEntropy     = entropy . extractData key . flip filter tData . parseFilter
+bestFilter tData key = maximumBy gainedInfo . filter filterFilter
+    where   gainedInfo      = compare `on` filteredEntropy
+            filteredEntropy = entropy . extractData key . flip filter tData . parseFilter
+            filterFilter    = (>0) . length . flip filter tData . parseFilter
 
 extractData :: String -> [Map String a] -> [a]
 extractData = map . findWithDefault (error "missing value")
@@ -39,12 +41,7 @@ extractData = map . findWithDefault (error "missing value")
 constructAnswer :: String -> [Map String Value] -> DecisionTree
 constructAnswer _ [] = error "can't construct Answer from empty data set"
 constructAnswer key rawData = Answer $ DecisionTreeResult v c ss
-    where   v           = head . foldl longestArr [] . group $ pureData
+    where   v           = head . maximumBy (compare `on` length) . group $ pureData
             c           = (fromIntegral . length . filter (==v) $ pureData) / fromIntegral ss
             ss          = length pureData
             pureData    = extractData key rawData
-
-longestArr l1 l2 =
-    if length l1 > length l2
-        then l1
-        else l2
