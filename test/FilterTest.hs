@@ -68,6 +68,26 @@ parse12 = TestCase $ assertBool "from JSON not equal" (f1 /= f2)
     where   f1 = Just $ Filter "<" (String "b") "a"                                 :: Maybe Filter
             f2 = decode "{\"operator\": \"=\", \"key\": \"a\", \"value\": \"b\"}"   :: Maybe Filter
 
+parse13 = TestCase $ assertEqual "greater than, True" True expression
+    where   expression  = parseFilter fil obj           :: Bool
+            fil         = Filter ">" (Number 1) "a"     :: Filter
+            obj         = singleton "a" (Number 2)      :: Map String Value
+
+parse14 = TestCase $ assertEqual "greater than, False" False expression
+    where   expression  = parseFilter fil obj           :: Bool
+            fil         = Filter ">" (Number 1) "a"     :: Filter
+            obj         = singleton "a" (Number 0)      :: Map String Value
+
+parse15 = TestCase $ assertEqual "lesser than, True" True expression
+    where   expression  = parseFilter fil obj           :: Bool
+            fil         = Filter "<" (Number 1) "a"     :: Filter
+            obj         = singleton "a" (Number 0)      :: Map String Value
+
+parse16 = TestCase $ assertEqual "lesser than, False" False expression
+    where   expression  = parseFilter fil obj           :: Bool
+            fil         = Filter "<" (Number 1) "a"     :: Filter
+            obj         = singleton "a" (Number 2)      :: Map String Value
+
 
 labels = ["parse" ++ show n | n <- [1..]]
 
@@ -83,7 +103,11 @@ testCases = [
         parse9,
         parse10,
         parse11,
-        parse12
+        parse12,
+        parse13,
+        parse14,
+        parse15,
+        parse16
     ]
 
 tests = hUnitTestToTests . TestList . zipWith TestLabel labels $ testCases

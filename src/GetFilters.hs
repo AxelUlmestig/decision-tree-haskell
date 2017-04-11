@@ -7,7 +7,7 @@ module GetFilters (
 
 import qualified Data.Map
 import qualified Data.Set
-import qualified Data.List
+import Data.List (group, sort, sortBy)
 import Data.Aeson
 
 import Filter
@@ -17,8 +17,6 @@ instance Ord Value where
 
 rmdups :: (Ord a) => [a] -> [a]
 rmdups = map head . group . sort
-    where   sort    = Data.List.sort
-            group   = Data.List.group
 
 sortValues :: [Data.Map.Map String Value] -> Data.Map.Map String [Value]
 sortValues = mapMap rmdups . foldl (unionWith (++)) empty . map (mapMap (:[]))
@@ -41,7 +39,13 @@ getDataType :: [Value] -> String
 getDataType = foldl prioritizeType number . map typeCheck
 
 getTypeFilters :: String -> [Value] -> [String -> Filter]
-getTypeFilters _ values = map (Filter "=") values ++ map (Filter "!=") values
+getTypeFilters "String" values = map (Filter "=") values ++ map (Filter "!=") values
+getTypeFilters "Number" values = map (Filter ">") . prune (length values `quot` 3) . sortBy numValue $ values
+    where   numValue (Number v1) (Number v2) = compare v1 v2
+
+prune :: Int -> [a] -> [a]
+prune _ [] = []
+prune n (x:xs) = x : prune n (drop n xs)
 
 filtersFromDataTypes :: Data.Map.Map String [Value] -> Data.Map.Map String [String -> Filter]
 filtersFromDataTypes values = intersectionWith getTypeFilters dataTypes values
@@ -55,4 +59,4 @@ bindParametersToFilters = foldl (++) [] . mapWithKey applyKey
             mapWithKey  = Data.Map.mapWithKey
 
 getFilters :: [Data.Map.Map String Value] -> [Filter]
-getFilters = bindParametersToFilters . filtersFromDataTypes . sortValues
+getFilters = (NullFilter:) . bindParametersToFilters . filtersFromDataTypes . sortValues
