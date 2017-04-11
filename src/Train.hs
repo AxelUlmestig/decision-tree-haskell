@@ -6,7 +6,7 @@ module Train (
 
 import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
-import Data.List (group, maximumBy)
+import Data.List (group, maximumBy, minimumBy)
 import Data.Maybe (fromMaybe)
 import Data.Function (on)
 
@@ -30,8 +30,8 @@ train tData key = if ig > entropyLimit
             failedTData = filter (not . parseFilter fil) tData
 
 bestFilter :: [Map String Value] -> String -> [Filter] -> Filter
-bestFilter tData key = maximumBy gainedInfo . filter filterFilter
-    where   gainedInfo      = compare `on` filteredEntropy
+bestFilter tData key = minimumBy compareEntropy . filter filterFilter
+    where   compareEntropy  = compare `on` filteredEntropy
             filteredEntropy = entropy . extractData key . flip filter tData . parseFilter
             filterFilter    = (>0) . length . flip filter tData . parseFilter
 
