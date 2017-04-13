@@ -38,7 +38,7 @@ parseFilter f values
     | operator f == "!="    = fromMaybe False . fmap (/= value f) . Data.Map.lookup (key f) $ values
     | operator f == "<"     = fromMaybe False $ (<) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
     | operator f == ">"     = fromMaybe False $ (>) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
-    | otherwise             = False
+    | otherwise             = error $ "invalid filter operator: " ++ operator f
 
 parseString :: Value -> Maybe String
 parseString = parseMaybe parseJSON
