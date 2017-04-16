@@ -1,9 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
-import Blaze.ByteString.Builder           (fromByteString)
-import Blaze.ByteString.Builder.Char.Utf8 (fromShow, fromString, fromText)
-import Data.Monoid                        ((<>))
+import Blaze.ByteString.Builder.Char.Utf8 (fromString)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp           (run)
@@ -16,36 +14,14 @@ import Data.Aeson
 import qualified Data.Map as Map
 import qualified Data.ByteString.Lazy as LazyBS
 
+import qualified Endpoint.Dataset
+import qualified Endpoint.Index
+
 getResponse :: Request -> IO Response
-
-getResponse Request{requestMethod="PUT", pathInfo="api":"dataset":setName:[], requestBody=requestBody} = do
-    body <- ioBody
-    case body of
-        Just dataset -> LazyBS.writeFile filePath dataset >> (return $
-            responseBuilder status201 [("Content-Type", "text/html")] (fromString ""))
-        Nothing -> return $
-            responseBuilder status400 [("Content-Type", "text/html")] (fromString "dataset not found")
-
-    where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
-            decodeMap = decode :: LazyBS.ByteString -> Maybe (Map.Map String Value)
-            ioBody = (fmap encode) . (>>= Map.lookup "dataset") . decodeMap . LazyBS.fromStrict <$> requestBody
-
-getResponse Request{requestMethod="GET", pathInfo="api":"dataset":setName:[]} = do
-    fileContent <- try . readFile $ filePath
-    case fileContent of
-        Left (_ :: SomeException) -> return $
-            responseBuilder status404 [("Content-Type", "text/html")] (fromString "dataset not found")
-        Right content -> return $
-            responseBuilder status200 [("Content-Type", "text/html")] (fromString content)
-
-    where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
-
-getResponse Request{requestMethod="GET", rawPathInfo="/"} =
-    readFile "./src/web/frontend/index.html" >>=
-    return . responseBuilder status200 [("Content-Type", "text/html")] . fromString
-
-getResponse _ = return $
-    responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")
+getResponse Request{requestMethod="PUT", pathInfo="api":"dataset":setName:[], requestBody=body} = Endpoint.Dataset.put setName body
+getResponse Request{requestMethod="GET", pathInfo="api":"dataset":setName:[]} = Endpoint.Dataset.get setName
+getResponse Request{requestMethod="GET", rawPathInfo="/"} = Endpoint.Index.get
+getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")
 
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 --application req respond = getResponse req >>= respond
