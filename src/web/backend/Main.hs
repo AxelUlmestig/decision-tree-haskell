@@ -41,7 +41,7 @@ getResponse Request{requestMethod="GET", pathInfo="api":"dataset":setName:[]} = 
     where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
 
 getResponse Request{requestMethod="GET", rawPathInfo="/"} =
-    readFile "./index.html" >>=
+    readFile "./src/web/frontend/index.html" >>=
     return . responseBuilder status200 [("Content-Type", "text/html")] . fromString
 
 getResponse _ = return $
