@@ -18,9 +18,9 @@ import qualified Endpoint.Dataset
 import qualified Endpoint.Index
 
 getResponse :: Request -> IO Response
-getResponse Request{requestMethod="PUT", pathInfo="api":"dataset":setName:[], requestBody=body} = Endpoint.Dataset.put setName body
-getResponse Request{requestMethod="GET", pathInfo="api":"dataset":setName:[]} = Endpoint.Dataset.get setName
-getResponse Request{requestMethod="GET", rawPathInfo="/"} = Endpoint.Index.get
+getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="PUT", requestBody=body} = Endpoint.Dataset.put setName body
+getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="GET"} = Endpoint.Dataset.get setName
+getResponse Request{rawPathInfo="/", requestMethod="GET"} = Endpoint.Index.get
 getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")
 
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
