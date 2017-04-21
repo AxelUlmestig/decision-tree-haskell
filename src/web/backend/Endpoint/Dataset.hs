@@ -22,7 +22,7 @@ get setName = do
         Left (_ :: SomeException) -> return $
             responseBuilder status404 [("Content-Type", "text/html")] (fromString "dataset not found")
         Right content -> return $
-            responseBuilder status200 [("Content-Type", "text/html")] (fromString content)
+            responseBuilder status200 [("Content-Type", "application/json")] (fromString content)
 
     where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
 
@@ -30,7 +30,7 @@ put setName requestBody = do
     body <- ioBody
     case body of
         Just dataset -> LazyBS.writeFile filePath dataset >> (return $
-            responseBuilder status201 [("Content-Type", "text/html")] (fromString ""))
+            responseBuilder status201 [] (fromString ""))
         Nothing -> return $
             responseBuilder status400 [("Content-Type", "text/html")] (fromString "dataset not found")
 
