@@ -17,10 +17,15 @@ import qualified Data.ByteString.Lazy as LazyBS
 import qualified Endpoint.Dataset
 import qualified Endpoint.Index
 
+notImplemented = responseBuilder status418 [("Content-Type", "text/text")] (fromString "not implemented")
+
 getResponse :: Request -> IO Response
-getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="PUT", requestBody=body} = Endpoint.Dataset.put setName body
-getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="GET"} = Endpoint.Dataset.get setName
-getResponse Request{rawPathInfo="/", requestMethod="GET"} = Endpoint.Index.get
+getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="PUT", requestBody=body}     = Endpoint.Dataset.put setName body
+getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="GET"}                       = Endpoint.Dataset.get setName
+getResponse Request{pathInfo="api":"dataset":setName:"train":[], requestMethod="POST"}              = return $ notImplemented
+getResponse Request{pathInfo="api":"model":modelName:[], requestMethod="GET"}                       = return $ notImplemented
+getResponse Request{pathInfo="api":"model":modelName:"evaluate":[], requestMethod="POST"}           = return $ notImplemented
+getResponse Request{rawPathInfo="/", requestMethod="GET"}                                           = Endpoint.Index.get
 getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")
 
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
