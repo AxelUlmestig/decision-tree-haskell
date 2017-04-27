@@ -14,7 +14,8 @@ executable haskell-decision-tree
                        bytestring,
                        text,
                        aeson,
-                       containers
+                       containers,
+                       directory >= 1.2.5.0
   hs-source-dirs:      src/core, src/web/backend
   default-language:    Haskell2010
 
