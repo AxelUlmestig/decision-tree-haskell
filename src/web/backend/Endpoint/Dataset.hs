@@ -64,7 +64,7 @@ trainInternal setName trainVar = do
         Left err -> return $
             responseBuilder status400 [("Content-Type", "text/html")] (fromString err)
         Right model -> LazyBS.writeFile modelFilePath (encode model) >>
-            (return $ responseBuilder status201 [("Content-Type", "text/html")] (fromString modelName))
+            (return $ responseLBS status201 [("Content-Type", "application/json")] (encode model))
 
     where   setFilePath     = "./datasets/" ++ setName ++ ".json"
             modelFilePath   = "./models/" ++ modelName ++ ".json"
