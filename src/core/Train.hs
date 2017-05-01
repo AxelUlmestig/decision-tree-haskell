@@ -1,7 +1,8 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module Train (
-    train
+    train,
+    TrainingResult(..)
 ) where
 
 import Data.Aeson
@@ -15,14 +16,40 @@ import Control.Applicative
 import DecisionTree
 import Filter
 import GetFilters
+import GetMetaData
 import Entropy
 
 entropyLimit = 0.2
 
-train :: [Map String Value] -> String -> Either String DecisionTree
-train [] _      = Left "can't train based on empty data set"
-train tData key = fil >>= constructTree tData key
-    where   fil = bestFilter tData key . getFilters . map (delete key) $ tData
+{- training result functions -}
+
+data TrainingResult = TrainingResult {
+    name        :: String,
+    metaData    :: Map String DataType,
+    model       :: DecisionTree
+} deriving (Eq, Show)
+
+instance ToJSON TrainingResult where
+    toJSON tr = object [
+        "name"      .= name tr,
+        "model"     .= model tr,
+        "metaData"  .= metaData tr
+        ]
+
+instance FromJSON TrainingResult where
+    parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "metaData" <*> o .: "model"
+    parseJSON _             = fail "can't parse object"
+
+train :: String -> [Map String Value] -> String -> Either String TrainingResult
+train modelName tData key = TrainingResult modelName metaData <$> trainModel tData key
+    where   metaData    = delete key . getDataTypes . structureData $ tData
+
+{- train functions -}
+
+trainModel :: [Map String Value] -> String -> Either String DecisionTree
+trainModel [] _         = Left "can't train based on empty data set"
+trainModel tData key    = fil >>= constructTree tData key
+    where   fil     = bestFilter tData key . getFilters . map (delete key) $ tData
 
 constructTree :: [Map String Value] -> String -> Filter -> Either String DecisionTree
 constructTree tData key fil =
@@ -30,8 +57,8 @@ constructTree tData key fil =
         then Question fil <$> posTree <*> negTree
         else constructAnswer key tData
     where   ig          = informationGain tData . parseFilter $ fil
-            posTree     = train passedTData key
-            negTree     = train failedTData key
+            posTree     = trainModel passedTData key
+            negTree     = trainModel failedTData key
             passedTData = filter (parseFilter fil) tData
             failedTData = filter (not . parseFilter fil) tData
 

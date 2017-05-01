@@ -59,7 +59,7 @@ train setName requestBody = do
 trainInternal setName trainVar = do
     fileContent <- try . readFile $ setFilePath
     fileContent' <- stringifyErr fileContent
-    modelOrError <- return $ train' trainVar fileContent'
+    modelOrError <- return $ train' modelName trainVar fileContent'
     case modelOrError of
         Left err -> return $
             responseBuilder status400 [("Content-Type", "text/html")] (fromString err)
@@ -72,5 +72,5 @@ trainInternal setName trainVar = do
             stringifyErr    = return . left show :: Either SomeException String -> IO (Either String String)
             getKey          = fromMaybe (Left "missing targetvar") . fmap Right . Data.Map.lookup "targetvar"
 
-train' :: String -> Either String String -> Either String DecisionTree
-train' key fileContent = fileContent >>= eitherDecode . C8.pack >>= flip Train.train key
+train' :: String -> String -> Either String String -> Either String Train.TrainingResult
+train' modelName key fileContent = fileContent >>= eitherDecode . C8.pack >>= flip (Train.train modelName) key

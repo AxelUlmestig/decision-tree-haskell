@@ -18,6 +18,7 @@ import Network.Wai
 import System.Directory
 
 import DecisionTree
+import Train
 
 {- get model functions -}
 
@@ -33,7 +34,7 @@ getAll = listDirectory modelsDir >>= sequence . map readModel >>= return . respo
     where   modelsDir   = "./models/"
             readModel   = readFile . (modelsDir++)
 
-extractModels :: [String] -> [DecisionTree]
+extractModels :: [String] -> [TrainingResult]
 extractModels = fromMaybe [] . sequence . filter isJust . map decode . map LazyBS.pack
 
 {- evaluate functions -}
@@ -56,8 +57,8 @@ evaluateRawModel obj rawModel = fromMaybe errResponse $ evaluateModel obj <$> de
     where   errResponse = respond500 "error parsing model"
             decodeDT    = decode . LazyBS.pack
 
-evaluateModel :: Map String Value -> DecisionTree -> Response
-evaluateModel obj = respond200 . encode . flip askTree obj
+evaluateModel :: Map String Value -> TrainingResult -> Response
+evaluateModel obj = respond200 . encode . flip askTree obj . model
 
 {- misc functions -}
 
