@@ -7,70 +7,83 @@ module Endpoint.Dataset (
     train
 ) where
 
+import Control.Exception (catch)
+import Data.Aeson
+import Data.ByteString (ByteString)
+import qualified Data.ByteString.Lazy.Char8 as LazyBS
+import qualified Data.Map as Map
+import Data.Map (lookup, Map, singleton)
+import Data.Maybe (fromMaybe)
+import Data.Text (Text, unpack)
 import Network.HTTP.Types
 import Network.Wai
-import Blaze.ByteString.Builder.Char.Utf8 (fromString)
-import Control.Exception (SomeException, try)
-import Data.Text (unpack)
-import Data.Aeson
-import qualified Data.ByteString.Lazy as LazyBS
-import qualified Data.Map as Map
-import Control.Arrow
-import qualified Data.ByteString.Lazy.Char8 as C8
-import Data.Maybe (fromMaybe)
-import Data.Map (lookup)
-
 
 import qualified Train
 import DecisionTree
 
---get :: String -> IO Response
-get setName = do
-    fileContent <- try . readFile $ filePath
-    case fileContent of
-        Left (_ :: SomeException) -> return $
-            responseBuilder status404 [("Content-Type", "text/html")] (fromString "dataset not found")
-        Right content -> return $
-            responseBuilder status200 [("Content-Type", "application/json")] (fromString content)
+{- get data set functions -}
 
-    where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
+get :: Text -> IO Response
+get setName = flip catch handler $ respond200 . LazyBS.pack <$> readFile filePath
+    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
+            handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
 
-put setName requestBody = do
-    body <- ioBody
-    case body of
-        Just dataset -> LazyBS.writeFile filePath dataset >> (return $
-            responseBuilder status201 [] (fromString ""))
-        Nothing -> return $
-            responseBuilder status400 [("Content-Type", "text/html")] (fromString "dataset not found")
+{- put data set functions -}
 
-    where   filePath = "./datasets/" ++ (unpack setName) ++ ".json"
-            decodeMap = decode :: LazyBS.ByteString -> Maybe (Map.Map String Value)
-            ioBody = (fmap encode) . (>>= Map.lookup "dataset") . decodeMap . LazyBS.fromStrict <$> requestBody
+put :: Text -> IO ByteString -> IO Response
+put setName requestBody = requestBody >>= putBody setName
 
-train setName requestBody = do
-    maybeTrainVar <- ioBody
-    case maybeTrainVar of
-        Just trainVar -> trainInternal setName trainVar
-        Nothing -> return $ responseBuilder status201 [("Content-Type", "text/html")] (fromString "missing targetvar from body")
+putBody :: Text -> ByteString -> IO Response
+putBody setName body = fromMaybe errResponse $ putDataSet setName <$> (decodeDataSet body >>= Map.lookup "dataset")
+    where   errResponse     = return $ respond400 "couldn't parse request body as dataset"
+            decodeDataSet   = decode . LazyBS.fromStrict :: ByteString -> Maybe (Map String [Map String Value])
 
-    where   decodeMap = decode :: LazyBS.ByteString -> Maybe (Map.Map String String)
-            ioBody = (>>= Map.lookup "targetvar") . decodeMap . LazyBS.fromStrict <$> requestBody
+putDataSet :: Text -> [Map String Value] -> IO Response
+putDataSet setName dataSet = LazyBS.writeFile filePath parsedDS >> return (respond200 parsedDS)
+    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
+            parsedDS    = encode dataSet
 
-trainInternal setName trainVar = do
-    fileContent <- try . readFile $ setFilePath
-    fileContent' <- stringifyErr fileContent
-    modelOrError <- return $ train' modelName trainVar fileContent'
-    case modelOrError of
-        Left err -> return $
-            responseBuilder status400 [("Content-Type", "text/html")] (fromString err)
-        Right model -> LazyBS.writeFile modelFilePath (encode model) >>
-            (return $ responseLBS status201 [("Content-Type", "application/json")] (encode model))
+{- train data set functions -}
 
-    where   setFilePath     = "./datasets/" ++ setName ++ ".json"
-            modelFilePath   = "./models/" ++ modelName ++ ".json"
-            modelName       = setName ++ "_" ++ trainVar
-            stringifyErr    = return . left show :: Either SomeException String -> IO (Either String String)
-            getKey          = fromMaybe (Left "missing targetvar") . fmap Right . Data.Map.lookup "targetvar"
+train :: Text -> IO ByteString -> IO Response
+train setName requestBody = requestBody >>= trainBody setName
 
-train' :: String -> String -> Either String String -> Either String Train.TrainingResult
-train' modelName key fileContent = fileContent >>= eitherDecode . C8.pack >>= flip (Train.train modelName) key
+trainBody :: Text -> ByteString -> IO Response
+trainBody setName body = fromMaybe errResponse $ trainKey setName <$> (decodeBody body >>= Map.lookup "targetvar")
+    where   errResponse = return $ respond400 "missing 'targetvar' from body"
+            decodeBody  = decode . LazyBS.fromStrict :: ByteString -> Maybe (Map String String)
+
+trainKey :: Text -> String -> IO Response
+trainKey setName targetvar = flip catch handler $ readFile filePath >>= trainRawDataSet trainF
+    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
+            handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
+            modelName   = unpack setName ++ "_" ++ targetvar
+            trainF      = flip (Train.train modelName) targetvar
+
+trainRawDataSet :: ([Map String Value] -> Either String Train.TrainingResult) -> String -> IO Response
+trainRawDataSet trainF rawModel = fromMaybe errResponse $ trainModel trainF <$> decode (LazyBS.pack rawModel)
+    where   errResponse = return $ respond500 "error parsing dataset"
+
+trainModel :: ([Map String Value] -> Either String Train.TrainingResult) -> [Map String Value] -> IO Response
+trainModel trainF dataset = either handleErr formatRes $ saveModel <$> trainF dataset
+    where   handleErr   = return . respond400
+            formatRes   = fmap (respond201 . encode)
+
+saveModel :: Train.TrainingResult -> IO Train.TrainingResult
+saveModel tr = LazyBS.writeFile filePath (encode tr) >> return tr
+    where   filePath    = "./models/" ++ Train.name tr ++ ".json"
+
+{- misc functions -}
+
+formatError :: String -> LazyBS.ByteString
+formatError = encodeMap . singleton "err"
+    where   encodeMap = encode :: Map String String -> LazyBS.ByteString
+
+appJsonHeader :: ResponseHeaders
+appJsonHeader = [("Content-Type", "application/json")]
+
+respond200 = responseLBS status200 appJsonHeader
+respond201 = responseLBS status201 appJsonHeader
+respond400 = responseLBS status400 appJsonHeader . formatError
+respond404 = responseLBS status404 appJsonHeader . formatError
+respond500 = responseLBS status500 appJsonHeader . formatError
