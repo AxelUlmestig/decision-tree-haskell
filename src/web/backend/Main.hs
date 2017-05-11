@@ -7,13 +7,7 @@ import Network.Wai
 import Network.Wai.Handler.Warp           (run)
 
 import Network.Wai.Internal
-import Data.Text (unpack)
-import Control.Exception (SomeException, try)
-import qualified Data.ByteString.Char8 as C8
 import Data.Aeson
-import qualified Data.Map as Map
-import qualified Data.ByteString.Lazy as LazyBS
-import qualified Data.Text as T
 
 import qualified Endpoint.Dataset
 import qualified Endpoint.Model
@@ -33,7 +27,6 @@ getResponse Request{rawPathInfo="/", requestMethod="GET"}                       
 getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")
 
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
---application req respond = getResponse req >>= respond
 application = (>>=) . getResponse
 
 main = run 3000 application
