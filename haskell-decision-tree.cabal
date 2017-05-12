@@ -6,7 +6,7 @@ maintainer:          axel.ulmestig@gmail.com
 build-type:          Simple
 cabal-version:       >=1.10
 
-executable haskell-decision-tree
+executable server
   main-is:             Main.hs
   build-depends:       base >=4.8 && <4.9,
                        warp,
@@ -20,6 +20,13 @@ executable haskell-decision-tree
                        containers,
                        directory >= 1.2.5.0
   hs-source-dirs:      src/core, src/web/backend
+  default-language:    Haskell2010
+
+executable build-frontend
+  main-is:             BuildFrontend.hs
+  build-depends:       base,
+                       process
+  hs-source-dirs:      src/web/frontend
   default-language:    Haskell2010
 
 Test-Suite TestSuite

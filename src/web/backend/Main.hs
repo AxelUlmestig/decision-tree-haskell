@@ -30,4 +30,4 @@ getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text"
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 application = (>>=) . getResponse
 
-main = run 3000 $ staticPolicy (addBase "src/web/frontend/") application
+main = run 3000 $ staticPolicy (addBase "src/web/frontend/build/") application
