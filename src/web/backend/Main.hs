@@ -5,6 +5,7 @@ import Blaze.ByteString.Builder.Char.Utf8 (fromString)
 import Network.HTTP.Types
 import Network.Wai
 import Network.Wai.Handler.Warp           (run)
+import Network.Wai.Middleware.Static      (addBase, staticPolicy)
 
 import Network.Wai.Internal
 import Data.Aeson
@@ -29,4 +30,4 @@ getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text"
 application :: Request -> (Response -> IO ResponseReceived) -> IO ResponseReceived
 application = (>>=) . getResponse
 
-main = run 3000 application
+main = run 3000 $ staticPolicy (addBase "src/web/frontend/") application

@@ -9,7 +9,10 @@ cabal-version:       >=1.10
 executable haskell-decision-tree
   main-is:             Main.hs
   build-depends:       base >=4.8 && <4.9,
-                       warp, wai, http-types,
+                       warp,
+                       wai,
+                       wai-middleware-static,
+                       http-types,
                        blaze-builder,
                        bytestring,
                        text,
