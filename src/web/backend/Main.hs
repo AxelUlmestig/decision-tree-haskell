@@ -18,6 +18,8 @@ notImplemented = responseBuilder status418 [("Content-Type", "text/text")] (from
 
 getResponse :: Request -> IO Response
 getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="PUT", requestBody=body}             = Endpoint.Dataset.put setName body
+getResponse Request{pathInfo="api":"dataset":[], requestMethod="GET"}                                       = Endpoint.Dataset.getAll
+getResponse Request{pathInfo="api":"dataset":"":[], requestMethod="GET"}                                    = Endpoint.Dataset.getAll
 getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="GET"}                               = Endpoint.Dataset.get setName
 getResponse Request{pathInfo="api":"dataset":setName:"train":[], requestMethod="POST", requestBody=body}    = Endpoint.Dataset.train setName body
 getResponse Request{pathInfo="api":"model":[], requestMethod="GET"}                                         = Endpoint.Model.getAll

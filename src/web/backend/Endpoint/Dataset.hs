@@ -3,6 +3,7 @@
 
 module Endpoint.Dataset (
     get,
+    getAll,
     put,
     train
 ) where
@@ -13,10 +14,11 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
 import qualified Data.Map as Map
 import Data.Map (lookup, Map, singleton)
-import Data.Maybe (fromMaybe)
+import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text, unpack)
 import Network.HTTP.Types
 import Network.Wai
+import System.Directory
 
 import qualified Train
 import DecisionTree
@@ -27,6 +29,16 @@ get :: Text -> IO Response
 get setName = flip catch handler $ respond200 . LazyBS.pack <$> readFile filePath
     where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
+
+{- get all datasets functions -}
+
+getAll :: IO Response
+getAll = listDirectory datasetsDir >>= sequence . map readDataset >>= return . respond200 . encode . extractDatasets
+    where   datasetsDir = "./datasets/"
+            readDataset = readFile . (datasetsDir++)
+
+extractDatasets :: [String] -> [[Map String Value]]
+extractDatasets = fromMaybe [] . sequence . filter isJust . map decode . map LazyBS.pack
 
 {- put data set functions -}
 
