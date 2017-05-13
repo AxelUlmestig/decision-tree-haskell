@@ -12,18 +12,20 @@ class Main extends React.Component {
             datasets: [],
             models: []
         }
+    }
 
-        fetch('http://localhost:3000/api/model/')
-        .then(console.log)
-        .catch(console.log)
+    componentDidMount() {
+        fetch('/api/model/')
+            .then(res => res.json())
+            .then(models => this.setState({models}))
     }
 
     render() {
         return (
-            <h1>
+            <div>
                 <Datasets />
-                <Models />
-            </h1>
+                <Models models={this.state.models} />
+            </div>
         );
     }
 

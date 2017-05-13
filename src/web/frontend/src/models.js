@@ -1,9 +1,11 @@
 import React from 'react';
 
-export default function Models(props) {
-    return (
-        <div>
-            <b>Models</b>
-        </div>
-    );
-}
+const iterateModels = models =>
+    models.
+        map(model => <li>{model.name}</li>)
+
+export default props =>
+    <div>
+        <b>Models</b>
+        <ul>{iterateModels(props.models)}</ul>
+    </div>

@@ -1,6 +1,6 @@
 import React from 'react';
 
-export default function Datasets(props) {
+export default props => {
     return (
         <div>
             <b>Datasets</b>
