@@ -13,6 +13,7 @@ import Data.Maybe (fromMaybe)
 import Data.Function (on)
 import Control.Applicative
 
+import qualified Dataset
 import DecisionTree
 import Filter
 import GetFilters
@@ -40,11 +41,10 @@ instance FromJSON TrainingResult where
     parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "metaData" <*> o .: "model"
     parseJSON _             = fail "can't parse object"
 
-train :: String -> [Map String Value] -> String -> Either String TrainingResult
-train modelName tData key = TrainingResult modelName metaData <$> trainModel tData key
-    where   metaData    = delete key . getDataTypes . structureData $ tData
-
-{- train functions -}
+train :: Dataset.Dataset -> String -> Either String TrainingResult
+train dataset key = TrainingResult modelName metaData <$> trainModel (Dataset.content dataset) key
+    where   metaData    = Dataset.parameters dataset
+            modelName   = Dataset.name dataset ++ "_" ++ key
 
 trainModel :: [Map String Value] -> String -> Either String DecisionTree
 trainModel [] _         = Left "can't train based on empty data set"

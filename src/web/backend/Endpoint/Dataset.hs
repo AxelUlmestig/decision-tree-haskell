@@ -22,6 +22,7 @@ import System.Directory
 
 import qualified Train
 import DecisionTree
+import Dataset
 
 {- get data set functions -}
 
@@ -37,7 +38,7 @@ getAll = listDirectory datasetsDir >>= sequence . map readDataset >>= return . r
     where   datasetsDir = "./datasets/"
             readDataset = readFile . (datasetsDir++)
 
-extractDatasets :: [String] -> [[Map String Value]]
+extractDatasets :: [String] -> [Dataset]
 extractDatasets = fromMaybe [] . sequence . filter isJust . map decode . map LazyBS.pack
 
 {- put data set functions -}
@@ -52,8 +53,9 @@ putBody setName body = fromMaybe errResponse $ putDataSet setName <$> (decodeDat
 
 putDataSet :: Text -> [Map String Value] -> IO Response
 putDataSet setName dataSet = LazyBS.writeFile filePath parsedDS >> return (respond200 parsedDS)
-    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
-            parsedDS    = encode dataSet
+    where   setNameStr  = unpack setName
+            filePath    = "./datasets/" ++ setNameStr ++ ".json"
+            parsedDS    = encode $ prepareDataset setNameStr dataSet
 
 {- train data set functions -}
 
@@ -70,13 +72,13 @@ trainKey setName targetvar = flip catch handler $ readFile filePath >>= trainRaw
     where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
             modelName   = unpack setName ++ "_" ++ targetvar
-            trainF      = flip (Train.train modelName) targetvar
+            trainF      = flip Train.train targetvar
 
-trainRawDataSet :: ([Map String Value] -> Either String Train.TrainingResult) -> String -> IO Response
+trainRawDataSet :: (Dataset -> Either String Train.TrainingResult) -> String -> IO Response
 trainRawDataSet trainF rawModel = fromMaybe errResponse $ trainModel trainF <$> decode (LazyBS.pack rawModel)
     where   errResponse = return $ respond500 "error parsing dataset"
 
-trainModel :: ([Map String Value] -> Either String Train.TrainingResult) -> [Map String Value] -> IO Response
+trainModel :: (Dataset -> Either String Train.TrainingResult) -> Dataset -> IO Response
 trainModel trainF dataset = either handleErr formatRes $ saveModel <$> trainF dataset
     where   handleErr   = return . respond400
             formatRes   = fmap (respond201 . encode)
