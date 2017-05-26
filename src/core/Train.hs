@@ -22,7 +22,7 @@ import Entropy
 
 entropyLimit = 0.2
 
-{- training result functions -}
+{- TrainingResult data type -}
 
 data TrainingResult = TrainingResult {
     name        :: String,
@@ -41,10 +41,14 @@ instance FromJSON TrainingResult where
     parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "metaData" <*> o .: "model"
     parseJSON _             = fail "can't parse object"
 
+{- TrainingResult functions -}
+
 train :: Dataset.Dataset -> String -> Either String TrainingResult
 train dataset key = TrainingResult modelName metaData <$> trainModel (Dataset.content dataset) key
     where   metaData    = Dataset.parameters dataset
             modelName   = Dataset.name dataset ++ "_" ++ key
+
+{- DecisionTree construction functions -}
 
 trainModel :: [Map String Value] -> String -> Either String DecisionTree
 trainModel [] _         = Left "can't train based on empty data set"
@@ -62,6 +66,16 @@ constructTree tData key fil =
             passedTData = filter (parseFilter fil) tData
             failedTData = filter (not . parseFilter fil) tData
 
+constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
+constructAnswer _ [] = Left "can't construct Answer from empty data set"
+constructAnswer key rawData = DecisionTreeResult <$> v <*> c <*> ss <**> return Answer
+    where   v           = head . maximumBy (compare `on` length) . group <$> pureData
+            c           = filter . (==) <$> v <*> pureData <**> return ((/) . fromIntegral . length) <*> fmap fromIntegral ss
+            ss          = length <$> pureData
+            pureData    = extractData key rawData
+
+{- filter evaluating functions -}
+
 bestFilter :: [Map String Value] -> String -> [Filter] -> Either String Filter
 bestFilter tData key = fmap getLowestEntropy . applyGetEntropy . filter hasAnyMatches
     where   hasAnyMatches       = (>0) . length . flip filter tData . parseFilter
@@ -75,12 +89,5 @@ getEntropy values key f = makePair <$> filteredEntropy f
             makePair e      = (e, f)
 
 extractData :: String -> [Map String a] -> Either String [a]
-extractData key = fromMaybe (Left ("missing key in data: " ++ key)) . fmap Right . sequence . map (Data.Map.lookup key)
-
-constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
-constructAnswer _ [] = Left "can't construct Answer from empty data set"
-constructAnswer key rawData = DecisionTreeResult <$> v <*> c <*> ss <**> return Answer
-    where   v           = head . maximumBy (compare `on` length) . group <$> pureData
-            c           = filter . (==) <$> v <*> pureData <**> return ((/) . fromIntegral . length) <*> fmap fromIntegral ss
-            ss          = length <$> pureData
-            pureData    = extractData key rawData
+extractData key = fromMaybe missingKey . fmap Right . sequence . map (Data.Map.lookup key)
+    where   missingKey  = (Left ("missing key in data: " ++ key))
