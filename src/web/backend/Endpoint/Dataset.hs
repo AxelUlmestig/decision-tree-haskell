@@ -2,6 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Endpoint.Dataset (
+    delete,
     get,
     getAll,
     put,
@@ -34,7 +35,10 @@ get setName = flip catch handler $ respond200 . LazyBS.pack <$> readFile filePat
 {- get all datasets functions -}
 
 getAll :: IO Response
-getAll = listDirectory datasetsDir >>= sequence . map readDataset >>= return . respond200 . encode . extractDatasets
+getAll = respond200 . encode <$> getAllInternal
+
+getAllInternal :: IO [Dataset]
+getAllInternal = listDirectory datasetsDir >>= sequence . map readDataset >>= return . extractDatasets
     where   datasetsDir = "./datasets/"
             readDataset = readFile . (datasetsDir++)
 
@@ -56,6 +60,37 @@ putDataSet setName dataSet = LazyBS.writeFile filePath parsedDS >> return (respo
     where   setNameStr  = unpack setName
             filePath    = "./datasets/" ++ setNameStr ++ ".json"
             parsedDS    = encode $ prepareDataset setNameStr dataSet
+
+{- delete data set functions -}
+
+data DeleteResponse = DeleteResponse {
+    remaining   :: [Dataset],
+    deleted     :: Dataset
+}
+
+instance ToJSON DeleteResponse where
+    toJSON dr = object [
+            "deleted"   .= deleted dr,
+            "remaining" .= remaining dr
+        ]
+
+delete :: Text -> IO Response
+delete setName = getAllInternal >>= deleteDataset . deleteInternal setName >>= return . formatDeleteResponse
+
+deleteInternal :: Text -> [Dataset] -> Either String DeleteResponse
+deleteInternal setName datasets = DeleteResponse remaining <$> deleted
+    where   remaining   = filter ((/= unpack setName) . name) datasets
+            deleted     = eitherHead errMessage $ filter ((== unpack setName) . name) datasets
+            errMessage  = "dataset with the name " ++ unpack setName ++ " was not found"
+
+deleteDataset :: Either String DeleteResponse -> IO (Either String DeleteResponse)
+deleteDataset (Left err)    = return (Left err)
+deleteDataset (Right dr)    = removeFile filePath >> return (Right dr)
+    where   filePath    = "./datasets/" ++ name (deleted dr) ++ ".json"
+
+formatDeleteResponse :: Either String DeleteResponse -> Response
+formatDeleteResponse (Left err) = respond404 err
+formatDeleteResponse (Right dr) = respond200 . encode $ dr
 
 {- train data set functions -}
 
@@ -88,6 +123,10 @@ saveModel tr = LazyBS.writeFile filePath (encode tr) >> return tr
     where   filePath    = "./models/" ++ Train.name tr ++ ".json"
 
 {- misc functions -}
+
+eitherHead :: a -> [b] -> Either a b
+eitherHead err [] = Left err
+eitherHead _ (x:xs) = Right x
 
 formatError :: String -> LazyBS.ByteString
 formatError = encodeMap . singleton "err"

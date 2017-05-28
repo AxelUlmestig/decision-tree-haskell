@@ -8,6 +8,7 @@ import Models from './models.js';
 import Train from './train.js';
 
 import uploadDataset from './communication/uploaddataset.js';
+import deleteDataset from './communication/deletedataset.js';
 import evaluate from './communication/evaluate.js';
 import train from './communication/train.js';
 
@@ -49,7 +50,7 @@ class Main extends misc.FunctionalComponent {
                 <Datasets
                     datasets={this.state.datasets}
                     uploadDataset={uploadDataset(this.update(addDataset))}
-                    deleteDataset={console.log}
+                    deleteDataset={deleteDataset(res => this.setVariable('datasets')(res.remaining))}
                 />
                 <Train
                     datasets={this.state.datasets}

@@ -21,6 +21,8 @@ getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="PUT", re
 getResponse Request{pathInfo="api":"dataset":[], requestMethod="GET"}                                       = Endpoint.Dataset.getAll
 getResponse Request{pathInfo="api":"dataset":"":[], requestMethod="GET"}                                    = Endpoint.Dataset.getAll
 getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="GET"}                               = Endpoint.Dataset.get setName
+getResponse Request{pathInfo="api":"dataset":setName:[], requestMethod="DELETE"}                            = Endpoint.Dataset.delete setName
+getResponse Request{pathInfo="api":"dataset":setName:"":[], requestMethod="DELETE"}                         = Endpoint.Dataset.delete setName
 getResponse Request{pathInfo="api":"dataset":setName:"train":[], requestMethod="POST", requestBody=body}    = Endpoint.Dataset.train setName body
 getResponse Request{pathInfo="api":"model":[], requestMethod="GET"}                                         = Endpoint.Model.getAll
 getResponse Request{pathInfo="api":"model":"":[], requestMethod="GET"}                                      = Endpoint.Model.getAll
