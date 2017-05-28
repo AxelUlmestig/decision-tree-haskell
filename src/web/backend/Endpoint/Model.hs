@@ -6,7 +6,7 @@ module Endpoint.Model (
     evaluate
 ) where
 
-import Control.Exception (catch)
+import Control.Exception (handle)
 import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
@@ -23,19 +23,19 @@ import Train
 {- get model functions -}
 
 get :: Text -> IO Response
-get modelName = flip catch handler $ respond200 . LazyBS.pack <$> readFile filePath
+get modelName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
     where   filePath    = "./models/" ++ unpack modelName ++ ".json"
             handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
 
 {- get all models functions -}
 
 getAll :: IO Response
-getAll = listDirectory modelsDir >>= sequence . map readModel >>= return . respond200 . encode . extractModels
+getAll = respond200 . encode . extractModels <$> (listDirectory modelsDir >>= mapM readModel)
     where   modelsDir   = "./models/"
             readModel   = readFile . (modelsDir++)
 
 extractModels :: [String] -> [TrainingResult]
-extractModels = fromMaybe [] . sequence . filter isJust . map decode . map LazyBS.pack
+extractModels = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
 
 {- evaluate functions -}
 
@@ -48,7 +48,7 @@ evaluateBody modelName rawBody = fromMaybe badRequest $ evaluateModelPath modelN
             decodeMap   = decode . LazyBS.fromStrict
 
 evaluateModelPath :: Text -> Map String Value -> IO Response
-evaluateModelPath modelName obj = flip catch handler $ evaluateRawModel obj <$> readFile filePath
+evaluateModelPath modelName obj = handle handler $ evaluateRawModel obj <$> readFile filePath
     where   handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
             filePath    = "./models/" ++ unpack modelName ++ ".json"
 

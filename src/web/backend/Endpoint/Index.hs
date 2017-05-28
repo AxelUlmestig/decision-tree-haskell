@@ -12,4 +12,4 @@ indexPath = "./src/web/frontend/build/index.html"
 headers = [("Content-Type", "text/html")]
 
 get :: IO Response
-get = readFile indexPath >>= return . responseBuilder status200 headers . fromString
+get = responseBuilder status200 headers . fromString <$> readFile indexPath

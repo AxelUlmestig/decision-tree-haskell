@@ -8,11 +8,12 @@ import Test.Framework.Providers.HUnit
 import Test.HUnit
 import Data.Aeson
 import Data.Map
+import Data.Maybe
 
 import DecisionTree
 import Filter
 
-decisionTree1 = TestCase $ assertBool "parse DecisionTreeResult" (parsed /= Nothing)
+decisionTree1 = TestCase $ assertBool "parse DecisionTreeResult" (isJust parsed)
     where   parsed  = decode "{\"answer\": \"ost\", \"confidence\": 1, \"sampleSize\": 1}" :: Maybe DecisionTreeResult
 
 decisionTree2 = TestCase $ assertEqual "single answer from json" (Just . String $ "ost") result

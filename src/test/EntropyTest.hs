@@ -17,7 +17,7 @@ entropy2 = TestCase $ assertEqual "no entropy" (entropy [1]) 0.0
 entropy3 = TestCase $ assertEqual "no entropy" (entropy [1, 1]) 0.0
 
 entropy4 = TestCase $ assertBool "positive entropy" positiveEntropy
-    where   positiveEntropy = 0 < (entropy [1,2])
+    where   positiveEntropy = 0 < entropy [1,2]
 
 labels = ["entropy" ++ show n | n <- [1..]]
 

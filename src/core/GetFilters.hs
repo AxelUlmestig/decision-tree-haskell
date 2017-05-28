@@ -28,7 +28,7 @@ filtersFromDataTypes values = intersectionWith getTypeFilters dataTypes values
     where   dataTypes   = getDataTypes values
 
 bindParametersToFilters :: Map String [String -> Filter] -> [Filter]
-bindParametersToFilters = foldl (++) [] . mapWithKey applyKey
+bindParametersToFilters = concat . mapWithKey applyKey
     where   applyKey    = map . flip ($)
 
 getFilters :: [Map String Value] -> [Filter]

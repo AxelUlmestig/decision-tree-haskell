@@ -9,7 +9,7 @@ module Endpoint.Dataset (
     train
 ) where
 
-import Control.Exception (catch)
+import Control.Exception (handle)
 import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
@@ -28,7 +28,7 @@ import Dataset
 {- get data set functions -}
 
 get :: Text -> IO Response
-get setName = flip catch handler $ respond200 . LazyBS.pack <$> readFile filePath
+get setName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
     where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
 
@@ -38,12 +38,12 @@ getAll :: IO Response
 getAll = respond200 . encode <$> getAllInternal
 
 getAllInternal :: IO [Dataset]
-getAllInternal = listDirectory datasetsDir >>= sequence . map readDataset >>= return . extractDatasets
+getAllInternal = extractDatasets <$> (listDirectory datasetsDir >>= mapM readDataset)
     where   datasetsDir = "./datasets/"
             readDataset = readFile . (datasetsDir++)
 
 extractDatasets :: [String] -> [Dataset]
-extractDatasets = fromMaybe [] . sequence . filter isJust . map decode . map LazyBS.pack
+extractDatasets = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
 
 {- put data set functions -}
 
@@ -75,7 +75,7 @@ instance ToJSON DeleteResponse where
         ]
 
 delete :: Text -> IO Response
-delete setName = getAllInternal >>= deleteDataset . deleteInternal setName >>= return . formatDeleteResponse
+delete setName = formatDeleteResponse <$> (getAllInternal >>= deleteDataset . deleteInternal setName)
 
 deleteInternal :: Text -> [Dataset] -> Either String DeleteResponse
 deleteInternal setName datasets = DeleteResponse remaining <$> deleted
@@ -103,7 +103,7 @@ trainBody setName body = fromMaybe errResponse $ trainKey setName <$> (decodeBod
             decodeBody  = decode . LazyBS.fromStrict :: ByteString -> Maybe (Map String String)
 
 trainKey :: Text -> String -> IO Response
-trainKey setName targetvar = flip catch handler $ readFile filePath >>= trainRawDataSet trainF
+trainKey setName targetvar = handle handler $ readFile filePath >>= trainRawDataSet trainF
     where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
             modelName   = unpack setName ++ "_" ++ targetvar

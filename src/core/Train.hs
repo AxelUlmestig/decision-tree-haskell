@@ -9,7 +9,6 @@ import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
 import qualified Data.Map (lookup)
 import Data.List (group, maximumBy, minimumBy)
-import Data.Maybe (fromMaybe)
 import Data.Function (on)
 import Control.Applicative
 
@@ -78,8 +77,8 @@ constructAnswer key rawData = DecisionTreeResult <$> v <*> c <*> ss <**> return 
 
 bestFilter :: [Map String Value] -> String -> [Filter] -> Either String Filter
 bestFilter tData key = fmap getLowestEntropy . applyGetEntropy . filter hasAnyMatches
-    where   hasAnyMatches       = (>0) . length . flip filter tData . parseFilter
-            applyGetEntropy     = sequence . map (getEntropy tData key)
+    where   hasAnyMatches       = not . null . flip filter tData . parseFilter
+            applyGetEntropy     = mapM (getEntropy tData key)
             getLowestEntropy    = snd . minimumBy compareEntropy
             compareEntropy      = compare `on` fst
 
@@ -89,5 +88,5 @@ getEntropy values key f = makePair <$> filteredEntropy f
             makePair e      = (e, f)
 
 extractData :: String -> [Map String a] -> Either String [a]
-extractData key = fromMaybe missingKey . fmap Right . sequence . map (Data.Map.lookup key)
-    where   missingKey  = (Left ("missing key in data: " ++ key))
+extractData key = maybe missingKey Right . mapM (Data.Map.lookup key)
+    where   missingKey  = Left $ "missing key in data: " ++ key
