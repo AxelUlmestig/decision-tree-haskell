@@ -25,11 +25,13 @@ import qualified Train
 import DecisionTree
 import Dataset
 
+datasetsDir = "./datasets/"
+
 {- get data set functions -}
 
 get :: Text -> IO Response
 get setName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
-    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
+    where   filePath    = datasetsDir ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
 
 {- get all datasets functions -}
@@ -39,8 +41,7 @@ getAll = respond200 . encode <$> getAllInternal
 
 getAllInternal :: IO [Dataset]
 getAllInternal = extractDatasets <$> (listDirectory datasetsDir >>= mapM readDataset)
-    where   datasetsDir = "./datasets/"
-            readDataset = readFile . (datasetsDir++)
+    where   readDataset = readFile . (datasetsDir++)
 
 extractDatasets :: [String] -> [Dataset]
 extractDatasets = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
@@ -58,7 +59,7 @@ putBody setName body = fromMaybe errResponse $ putDataSet setName <$> (decodeDat
 putDataSet :: Text -> [Map String Value] -> IO Response
 putDataSet setName dataSet = LazyBS.writeFile filePath parsedDS >> return (respond200 parsedDS)
     where   setNameStr  = unpack setName
-            filePath    = "./datasets/" ++ setNameStr ++ ".json"
+            filePath    = datasetsDir ++ setNameStr ++ ".json"
             parsedDS    = encode $ prepareDataset setNameStr dataSet
 
 {- delete data set functions -}
@@ -86,7 +87,7 @@ deleteInternal setName datasets = DeleteResponse remaining <$> deleted
 deleteDataset :: Either String DeleteResponse -> IO (Either String DeleteResponse)
 deleteDataset (Left err)    = return (Left err)
 deleteDataset (Right dr)    = removeFile filePath >> return (Right dr)
-    where   filePath    = "./datasets/" ++ name (deleted dr) ++ ".json"
+    where   filePath    = datasetsDir ++ name (deleted dr) ++ ".json"
 
 formatDeleteResponse :: Either String DeleteResponse -> Response
 formatDeleteResponse (Left err) = respond404 err
@@ -104,7 +105,7 @@ trainBody setName body = fromMaybe errResponse $ trainKey setName <$> (decodeBod
 
 trainKey :: Text -> String -> IO Response
 trainKey setName targetvar = handle handler $ readFile filePath >>= trainRawDataSet trainF
-    where   filePath    = "./datasets/" ++ unpack setName ++ ".json"
+    where   filePath    = datasetsDir ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
             modelName   = unpack setName ++ "_" ++ targetvar
             trainF      = flip Train.train targetvar

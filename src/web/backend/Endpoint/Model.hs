@@ -21,11 +21,13 @@ import System.Directory
 import DecisionTree
 import Train
 
+modelsDir = "./models/"
+
 {- get model functions -}
 
 get :: Text -> IO Response
 get modelName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
-    where   filePath    = "./models/" ++ unpack modelName ++ ".json"
+    where   filePath    = modelsDir ++ unpack modelName ++ ".json"
             handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
 
 {- get all models functions -}
@@ -35,8 +37,7 @@ getAll = respond200 . encode <$> getAllInternal
 
 getAllInternal :: IO [TrainingResult]
 getAllInternal = extractModels <$> (listDirectory modelsDir >>= mapM readModel)
-    where   modelsDir = "./models/"
-            readModel = readFile . (modelsDir++)
+    where   readModel = readFile . (modelsDir++)
 
 extractModels :: [String] -> [TrainingResult]
 extractModels = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
@@ -54,7 +55,7 @@ evaluateBody modelName rawBody = fromMaybe badRequest $ evaluateModelPath modelN
 evaluateModelPath :: Text -> Map String Value -> IO Response
 evaluateModelPath modelName obj = handle handler $ evaluateRawModel obj <$> readFile filePath
     where   handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
-            filePath    = "./models/" ++ unpack modelName ++ ".json"
+            filePath    = modelsDir ++ unpack modelName ++ ".json"
 
 evaluateRawModel :: Map String Value -> String -> Response
 evaluateRawModel obj rawModel = fromMaybe errResponse $ evaluateModel obj <$> decodeDT rawModel
@@ -89,7 +90,7 @@ deleteInternal modelName models = DeleteResponse remaining <$> deleted
 deleteModel :: Either String DeleteResponse -> IO (Either String DeleteResponse)
 deleteModel (Left err)    = return (Left err)
 deleteModel (Right dr)    = removeFile filePath >> return (Right dr)
-    where   filePath    = "./models/" ++ name (deleted dr) ++ ".json"
+    where   filePath    = modelsDir ++ name (deleted dr) ++ ".json"
 
 formatDeleteResponse :: Either String DeleteResponse -> Response
 formatDeleteResponse (Left err) = respond404 err
