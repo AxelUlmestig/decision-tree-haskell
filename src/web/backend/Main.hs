@@ -18,7 +18,7 @@ notImplemented = responseBuilder status418 [("Content-Type", "text/text")] (from
 
 getResponse :: Request -> IO Response
 getResponse Request{pathInfo=["api","dataset",setName], requestMethod="PUT", requestBody=body}              = Endpoint.Dataset.put setName body
-getResponse Request{pathInfo=["api","dataset"], requestMethod="GET"}                                       = Endpoint.Dataset.getAll
+getResponse Request{pathInfo=["api","dataset"], requestMethod="GET"}                                        = Endpoint.Dataset.getAll
 getResponse Request{pathInfo=["api","dataset",""], requestMethod="GET"}                                     = Endpoint.Dataset.getAll
 getResponse Request{pathInfo=["api","dataset",setName], requestMethod="GET"}                                = Endpoint.Dataset.get setName
 getResponse Request{pathInfo=["api","dataset",setName], requestMethod="DELETE"}                             = Endpoint.Dataset.delete setName
@@ -27,6 +27,7 @@ getResponse Request{pathInfo=["api","dataset",setName,"train"], requestMethod="P
 getResponse Request{pathInfo=["api","model"], requestMethod="GET"}                                          = Endpoint.Model.getAll
 getResponse Request{pathInfo=["api","model",""], requestMethod="GET"}                                       = Endpoint.Model.getAll
 getResponse Request{pathInfo=["api","model",modelName], requestMethod="GET"}                                = Endpoint.Model.get modelName
+getResponse Request{pathInfo=["api","model",modelName], requestMethod="DELETE"}                             = Endpoint.Model.delete modelName
 getResponse Request{pathInfo=["api","model",modelName,"evaluate"], requestMethod="POST", requestBody=body}  = Endpoint.Model.evaluate modelName body
 getResponse Request{rawPathInfo="/", requestMethod="GET"}                                                   = Endpoint.Index.get
 getResponse _ = return $ responseBuilder status404 [("Content-Type", "text/text")] (fromString "four oh four")

@@ -11,6 +11,7 @@ import uploadDataset from './communication/uploaddataset.js';
 import deleteDataset from './communication/deletedataset.js';
 import evaluate from './communication/evaluate.js';
 import train from './communication/train.js';
+import deleteModel from './communication/deletemodel.js';
 
 const addModel = model => state =>
     ({
@@ -59,7 +60,7 @@ class Main extends misc.FunctionalComponent {
                 <Models
                     models={this.state.models}
                     evaluate={evaluate}
-                    deleteModel={console.log}
+                    deleteModel={deleteModel(res => this.setVariable('models')(res.remaining))}
                 />
             </div>
         );
