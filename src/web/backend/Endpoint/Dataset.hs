@@ -21,30 +21,32 @@ import Network.HTTP.Types
 import Network.Wai
 import System.Directory
 
+import qualified Endpoint.Internal.HandleFiles as HF
+
 import qualified Train
 import DecisionTree
 import Dataset
 
 datasetsDir = "./datasets/"
 
+decodeDataset :: (LazyBS.ByteString -> Maybe Dataset)
+decodeDataset = decode
+
+matchDataset :: Text -> Dataset -> Bool
+matchDataset setName = (== unpack setName) . name
+
+datasetFileName :: Dataset -> FilePath
+datasetFileName = (++".json") . name
+
 {- get data set functions -}
 
 get :: Text -> IO Response
-get setName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
-    where   filePath    = datasetsDir ++ unpack setName ++ ".json"
-            handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
+get = HF.get datasetsDir
 
 {- get all datasets functions -}
 
 getAll :: IO Response
-getAll = respond200 . encode <$> getAllInternal
-
-getAllInternal :: IO [Dataset]
-getAllInternal = extractDatasets <$> (listDirectory datasetsDir >>= mapM readDataset)
-    where   readDataset = readFile . (datasetsDir++)
-
-extractDatasets :: [String] -> [Dataset]
-extractDatasets = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
+getAll = HF.getAll decodeDataset datasetsDir
 
 {- put data set functions -}
 
@@ -64,34 +66,8 @@ putDataSet setName dataSet = LazyBS.writeFile filePath parsedDS >> return (respo
 
 {- delete data set functions -}
 
-data DeleteResponse = DeleteResponse {
-    remaining   :: [Dataset],
-    deleted     :: Dataset
-}
-
-instance ToJSON DeleteResponse where
-    toJSON dr = object [
-            "deleted"   .= deleted dr,
-            "remaining" .= remaining dr
-        ]
-
 delete :: Text -> IO Response
-delete setName = formatDeleteResponse <$> (getAllInternal >>= deleteDataset . deleteInternal setName)
-
-deleteInternal :: Text -> [Dataset] -> Either String DeleteResponse
-deleteInternal setName datasets = DeleteResponse remaining <$> deleted
-    where   remaining   = filter ((/= unpack setName) . name) datasets
-            deleted     = eitherHead errMessage $ filter ((== unpack setName) . name) datasets
-            errMessage  = "dataset with the name " ++ unpack setName ++ " was not found"
-
-deleteDataset :: Either String DeleteResponse -> IO (Either String DeleteResponse)
-deleteDataset (Left err)    = return (Left err)
-deleteDataset (Right dr)    = removeFile filePath >> return (Right dr)
-    where   filePath    = datasetsDir ++ name (deleted dr) ++ ".json"
-
-formatDeleteResponse :: Either String DeleteResponse -> Response
-formatDeleteResponse (Left err) = respond404 err
-formatDeleteResponse (Right dr) = respond200 . encode $ dr
+delete = HF.delete datasetsDir decodeDataset datasetFileName . matchDataset
 
 {- train data set functions -}
 

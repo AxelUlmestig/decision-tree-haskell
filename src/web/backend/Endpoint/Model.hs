@@ -20,27 +20,33 @@ import System.Directory
 
 import DecisionTree
 import Train
+import qualified Endpoint.Internal.HandleFiles as HF
 
 modelsDir = "./models/"
+
+modelFileName :: TrainingResult -> FilePath
+modelFileName = (++".json") . name
+
+matchModel :: Text -> TrainingResult -> Bool
+matchModel modelName = (== unpack modelName) . name
 
 {- get model functions -}
 
 get :: Text -> IO Response
-get modelName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
-    where   filePath    = modelsDir ++ unpack modelName ++ ".json"
-            handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
+get = HF.get modelsDir
 
 {- get all models functions -}
 
+decodeModel :: LazyBS.ByteString -> Maybe TrainingResult
+decodeModel = decode
+
 getAll :: IO Response
-getAll = respond200 . encode <$> getAllInternal
+getAll = HF.getAll decodeModel modelsDir
 
-getAllInternal :: IO [TrainingResult]
-getAllInternal = extractModels <$> (listDirectory modelsDir >>= mapM readModel)
-    where   readModel = readFile . (modelsDir++)
+{- delete model functions -}
 
-extractModels :: [String] -> [TrainingResult]
-extractModels = fromMaybe [] . sequence . filter isJust . map (decode . LazyBS.pack)
+delete :: Text -> IO Response
+delete = HF.delete modelsDir decodeModel modelFileName . matchModel
 
 {- evaluate functions -}
 
@@ -65,42 +71,7 @@ evaluateRawModel obj rawModel = fromMaybe errResponse $ evaluateModel obj <$> de
 evaluateModel :: Map String Value -> TrainingResult -> Response
 evaluateModel obj = respond200 . encode . flip askTree obj . model
 
-{- delete model functions -}
-
-data DeleteResponse = DeleteResponse {
-    remaining   :: [TrainingResult],
-    deleted     :: TrainingResult
-}
-
-instance ToJSON DeleteResponse where
-    toJSON dr = object [
-            "deleted"   .= deleted dr,
-            "remaining" .= remaining dr
-        ]
-
-delete :: Text -> IO Response
-delete modelName = formatDeleteResponse <$> (getAllInternal >>= deleteModel . deleteInternal modelName)
-
-deleteInternal :: Text -> [TrainingResult] -> Either String DeleteResponse
-deleteInternal modelName models = DeleteResponse remaining <$> deleted
-    where   remaining   = filter ((/= unpack modelName) . name) models
-            deleted     = eitherHead errMessage $ filter ((== unpack modelName) . name) models
-            errMessage  = "dataset with the name " ++ unpack modelName ++ " was not found"
-
-deleteModel :: Either String DeleteResponse -> IO (Either String DeleteResponse)
-deleteModel (Left err)    = return (Left err)
-deleteModel (Right dr)    = removeFile filePath >> return (Right dr)
-    where   filePath    = modelsDir ++ name (deleted dr) ++ ".json"
-
-formatDeleteResponse :: Either String DeleteResponse -> Response
-formatDeleteResponse (Left err) = respond404 err
-formatDeleteResponse (Right dr) = respond200 . encode $ dr
-
 {- misc functions -}
-
-eitherHead :: a -> [b] -> Either a b
-eitherHead err [] = Left err
-eitherHead _ (x:xs) = Right x
 
 formatError :: String -> LazyBS.ByteString
 formatError = encodeMap . singleton "err"
