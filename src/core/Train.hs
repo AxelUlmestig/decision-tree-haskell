@@ -44,7 +44,7 @@ instance FromJSON TrainingResult where
 
 train :: Dataset.Dataset -> String -> Either String TrainingResult
 train dataset key = TrainingResult modelName metaData <$> trainModel (Dataset.content dataset) key
-    where   metaData    = Dataset.parameters dataset
+    where   metaData    = delete key $ Dataset.parameters dataset
             modelName   = Dataset.name dataset ++ "_" ++ key
 
 {- DecisionTree construction functions -}
