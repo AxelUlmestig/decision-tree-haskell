@@ -24,7 +24,7 @@ rmdups = map head . group . sort
 
 {- getDataTypes functions -}
 
-data DataType = StringType | NumberType deriving (Eq, Show)
+data DataType = StringType | NumberType | NullType deriving (Eq, Show)
 
 instance ToJSON DataType where
     toJSON StringType = "STRING"
@@ -40,9 +40,12 @@ getDataTypes = Data.Map.map getDataType . Data.Map.map setDataTypes
             setDataTypes    = map typeCheck
 
 typeCheck :: Value -> DataType
-typeCheck (String x) = StringType
-typeCheck (Number x) = NumberType
+typeCheck (String x)    = StringType
+typeCheck (Number x)    = NumberType
+typeCheck Null          = NullType
 
 prioritizeType :: DataType -> DataType -> DataType
 prioritizeType NumberType NumberType    = NumberType
+prioritizeType NullType x               = x
+prioritizeType x NullType               = x
 prioritizeType _ _                      = StringType

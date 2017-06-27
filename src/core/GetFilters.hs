@@ -18,6 +18,7 @@ getTypeFilters :: DataType -> [Value] -> [String -> Filter]
 getTypeFilters StringType values = map (Filter "=") values ++ map (Filter "!=") values
 getTypeFilters NumberType values = map (Filter ">") . prune (length values `quot` 3) . sortBy numValue $ values
     where   numValue (Number v1) (Number v2) = compare v1 v2
+            numValue _ _ = GT
 
 prune :: Int -> [a] -> [a]
 prune _ []      = []
