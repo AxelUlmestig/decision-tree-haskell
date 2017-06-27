@@ -6,9 +6,7 @@ module Filter (
     parseFilter
 ) where
 
-import Data.Aeson
 import Data.Aeson.Types
-import Data.Monoid
 import qualified Data.Map
 
 data Filter = NullFilter | Filter {
@@ -32,15 +30,20 @@ instance FromJSON Filter where
 
 parseFilter :: Filter -> Data.Map.Map String Value -> Bool
 parseFilter NullFilter _ = True
-parseFilter f values
-    | operator f == "="     = maybe False (== value f) . Data.Map.lookup (key f) $ values
-    | operator f == "!="    = maybe False (/= value f) . Data.Map.lookup (key f) $ values
-    | operator f == "<"     = maybe False id $ (<) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
-    | operator f == ">"     = maybe False id $ (>) <$> (parseNumber =<< Data.Map.lookup (key f) values) <*> (parseNumber . value $ f)
+parseFilter f sample
+    | operator f == "="     = maybe False (== value f) $ Data.Map.lookup (key f) sample
+    | operator f == "!="    = maybe False (/= value f) $ Data.Map.lookup (key f) sample
+    | operator f == "<"     = maybe False id $ do
+        sampleValue <- Data.Map.lookup (key f) sample
+        parsedValue <- parseNumber sampleValue
+        filterValue <- parseNumber (value f)
+        return (parsedValue < filterValue)
+    | operator f == ">"     = maybe False id $ do
+        sampleValue <- Data.Map.lookup (key f) sample
+        parsedValue <- parseNumber sampleValue
+        filterValue <- parseNumber (value f)
+        return (parsedValue > filterValue)
     | otherwise             = error $ "invalid filter operator: " ++ operator f
-
-parseString :: Value -> Maybe String
-parseString = parseMaybe parseJSON
 
 parseNumber :: Value -> Maybe Float
 parseNumber = parseMaybe parseJSON
