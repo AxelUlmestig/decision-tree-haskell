@@ -27,6 +27,7 @@ import qualified Train
 import DecisionTree
 import Dataset
 
+significanceLevel = 0.05
 datasetsDir = "./datasets/"
 
 decodeDataset :: (LazyBS.ByteString -> Maybe Dataset)
@@ -84,7 +85,7 @@ trainKey setName targetvar = handle handler $ readFile filePath >>= trainRawData
     where   filePath    = datasetsDir ++ unpack setName ++ ".json"
             handler     = (\_ -> return (respond404 "dataset not found")) :: IOError -> IO Response
             modelName   = unpack setName ++ "_" ++ targetvar
-            trainF      = flip Train.train targetvar
+            trainF      = flip (Train.train significanceLevel) targetvar
 
 trainRawDataSet :: (Dataset -> Either String Train.TrainingResult) -> String -> IO Response
 trainRawDataSet trainF rawModel = fromMaybe errResponse $ trainModel trainF <$> decode (LazyBS.pack rawModel)

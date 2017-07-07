@@ -12,7 +12,14 @@ import qualified Data.Map (map)
 import Data.Map (empty, Map, unionWith)
 
 instance Ord Value where
-    compare v1 v2 = compare (show v1) (show v2)
+    compare (String a) (String b)   = compare a b
+    compare (Number a) (Number b)   = compare a b
+    compare (String _) (Number _)   = GT
+    compare (Number _) (String _)   = LT
+    compare Null Null               = EQ
+    compare Null _                  = LT
+    compare _ Null                  = GT
+    compare _ _ = EQ
 
 {- structureData functions -}
 

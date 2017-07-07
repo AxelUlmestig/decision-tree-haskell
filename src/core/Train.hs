@@ -18,6 +18,7 @@ import Filter
 import GetFilters
 import GetMetaData
 import Entropy
+import StatisticalSignificance
 
 entropyLimit = 0.2
 
@@ -42,26 +43,26 @@ instance FromJSON TrainingResult where
 
 {- TrainingResult functions -}
 
-train :: Dataset.Dataset -> String -> Either String TrainingResult
-train dataset key = TrainingResult modelName metaData <$> trainModel (Dataset.content dataset) key
+train :: Double -> Dataset.Dataset -> String -> Either String TrainingResult
+train significanceLevel dataset key = TrainingResult modelName metaData <$> trainModel significanceLevel (Dataset.content dataset) key
     where   metaData    = delete key $ Dataset.parameters dataset
             modelName   = Dataset.name dataset ++ "_" ++ key
 
 {- DecisionTree construction functions -}
 
-trainModel :: [Map String Value] -> String -> Either String DecisionTree
-trainModel [] _         = Left "can't train based on empty data set"
-trainModel tData key    = fil >>= constructTree tData key
-    where   fil     = bestFilter tData key . getFilters . map (delete key) $ tData
+trainModel :: Double -> [Map String Value] -> String -> Either String DecisionTree
+trainModel _ [] _                       = Left "can't train based on empty data set"
+trainModel significanceLevel tData key  = fil >>= constructTree significanceLevel tData key
+    where   fil     = bestFilter significanceLevel tData key . getFilters . map (delete key) $ tData
 
-constructTree :: [Map String Value] -> String -> Filter -> Either String DecisionTree
-constructTree tData key fil =
+constructTree :: Double -> [Map String Value] -> String -> Filter -> Either String DecisionTree
+constructTree significanceLevel tData key fil =
     if ig > entropyLimit
         then Question fil <$> posTree <*> negTree
         else constructAnswer key tData
     where   ig          = informationGain tData . parseFilter $ fil
-            posTree     = trainModel passedTData key
-            negTree     = trainModel failedTData key
+            posTree     = trainModel significanceLevel passedTData key
+            negTree     = trainModel significanceLevel failedTData key
             passedTData = filter (parseFilter fil) tData
             failedTData = filter (not . parseFilter fil) tData
 
@@ -75,8 +76,8 @@ constructAnswer key rawData = DecisionTreeResult <$> v <*> c <*> ss <**> return 
 
 {- filter evaluating functions -}
 
-bestFilter :: [Map String Value] -> String -> [Filter] -> Either String Filter
-bestFilter tData key = fmap getLowestEntropy . applyGetEntropy . filter hasAnyMatches
+bestFilter :: Double -> [Map String Value] -> String -> [Filter] -> Either String Filter
+bestFilter significanceLevel tData key = fmap getLowestEntropy . applyGetEntropy . filterFilters significanceLevel tData key
     where   hasAnyMatches       = not . null . flip filter tData . parseFilter
             applyGetEntropy     = mapM (getEntropy tData key)
             getLowestEntropy    = snd . minimumBy compareEntropy
@@ -90,3 +91,8 @@ getEntropy values key f = makePair <$> filteredEntropy f
 extractData :: String -> [Map String a] -> Either String [a]
 extractData key = maybe missingKey Right . mapM (Data.Map.lookup key)
     where   missingKey  = Left $ "missing key in data: " ++ key
+
+filterFilters :: Double -> [Map String Value] -> String -> [Filter] -> [Filter]
+filterFilters significanceLevel tData key = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
+    where   hasAnyMatches               = not . null . flip filter tData . parseFilter
+            isStatisticallySignificant  = statisticallySignificant significanceLevel tData key . parseFilter

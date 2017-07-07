@@ -18,7 +18,8 @@ executable server
                        text,
                        aeson,
                        containers,
-                       directory >= 1.2.5.0
+                       directory >= 1.2.5.0,
+                       statistics
   hs-source-dirs:      src/core, src/web/backend
   default-language:    Haskell2010
 
@@ -38,6 +39,7 @@ Test-Suite TestSuite
                        test-framework-hunit,
                        HUnit,
                        aeson,
-                       containers
+                       containers,
+                       statistics
   default-language:    Haskell2010
   ghc-options: -fno-warn-tabs
