@@ -4,15 +4,15 @@ module Entropy (
 ) where
 
 entropy :: Eq a => [a] -> Float
-entropy xs = negate . sum . map f $ xs
-    where   f x = pmf (==x) xs * logBase 2 (pmf (==x) xs)
+entropy values = negate . sum . map f $ values
+    where   f value = pmf (==value) values * logBase 2 (pmf (==value) values)
 
 pmf :: (a -> Bool) -> [a] -> Float
-pmf f v = filteredLength / rawLength
-    where   filteredLength  = fromIntegral . length . filter f $ v
-            rawLength       = fromIntegral . length $ v
+pmf predicate values = filteredLength / rawLength
+    where   filteredLength  = fromIntegral . length . filter predicate $ values
+            rawLength       = fromIntegral . length $ values
 
 informationGain :: Eq a => [a] -> (a -> Bool) -> Float
-informationGain xs fil = before - after
-    where   before = entropy xs
-            after = entropy . filter fil $ xs
+informationGain values fil = before - after
+    where   before = entropy values
+            after = entropy . filter fil $ values

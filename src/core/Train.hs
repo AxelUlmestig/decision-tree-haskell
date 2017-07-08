@@ -50,55 +50,60 @@ instance FromJSON TrainingResult where
 {- TrainingResult functions -}
 
 train :: Double -> Dataset.Dataset -> String -> Either String TrainingResult
-train significanceLevel dataset key = TrainingResult modelName metaData <$> trainModel significanceLevel (Dataset.content dataset) key
-    where   metaData    = delete key $ Dataset.parameters dataset
-            modelName   = Dataset.name dataset ++ "_" ++ key
+train significanceLevel dataset targetVariable = do
+    let metaData = delete targetVariable $ Dataset.parameters dataset
+    let modelName = Dataset.name dataset ++ "_" ++ targetVariable
+    model <- trainModel significanceLevel (Dataset.content dataset) targetVariable
+    return $ TrainingResult modelName metaData model
 
 {- DecisionTree construction functions -}
 
 trainModel :: Double -> [Map String Value] -> String -> Either String DecisionTree
-trainModel _ [] _                       = Left "can't train based on empty data set"
-trainModel significanceLevel tData key  = fil >>= constructTree significanceLevel tData key
-    where   fil     = bestFilter significanceLevel tData key . getFilters . map (delete key) $ tData
+trainModel _ [] _                                           = Left "can't train based on empty data set"
+trainModel significanceLevel trainingData targetVariable    = do
+    let potentialFilters = getFilters $ map (delete targetVariable) trainingData
+    chosenFilter <- bestFilter significanceLevel trainingData targetVariable potentialFilters
+    constructTree significanceLevel trainingData targetVariable chosenFilter
 
 constructTree :: Double -> [Map String Value] -> String -> Filter -> Either String DecisionTree
-constructTree significanceLevel tData key fil =
-    if ig > entropyLimit
-        then Question fil <$> posTree <*> negTree
-        else constructAnswer key tData
-    where   ig          = informationGain tData . parseFilter $ fil
-            posTree     = trainModel significanceLevel passedTData key
-            negTree     = trainModel significanceLevel failedTData key
-            passedTData = filter (parseFilter fil) tData
-            failedTData = filter (not . parseFilter fil) tData
+constructTree significanceLevel trainingData targetVariable fil =
+    if informationGain trainingData (parseFilter fil) < entropyLimit
+        then constructAnswer targetVariable trainingData
+        else do
+            let passedTData = filter (parseFilter fil) trainingData
+            let failedTData = filter (not . parseFilter fil) trainingData
+            affirmativeTree <- trainModel significanceLevel passedTData targetVariable
+            negativeTree <- trainModel significanceLevel failedTData targetVariable
+            return $ Question fil affirmativeTree negativeTree
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
-constructAnswer _ [] = Left "can't construct Answer from empty data set"
-constructAnswer key rawData = DecisionTreeResult <$> v <*> c <*> ss <**> return Answer
-    where   v           = head . maximumBy (compare `on` length) . group <$> pureData
-            c           = filter . (==) <$> v <*> pureData <**> return ((/) . fromIntegral . length) <*> fmap fromIntegral ss
-            ss          = length <$> pureData
-            pureData    = extractData key rawData
+constructAnswer _ []        = Left "can't construct Answer from empty data set"
+constructAnswer targetVariable rawData = do
+    pureData <- extractTrainingData targetVariable rawData
+    let value = head . maximumBy (compare `on` length) . group $ pureData
+    let sampleSize = length pureData
+    let confidence = (/ fromIntegral sampleSize) . fromIntegral . length . filter (==value) $ pureData
+    return . Answer $ DecisionTreeResult value confidence sampleSize
 
 {- filter evaluating functions -}
 
 bestFilter :: Double -> [Map String Value] -> String -> [Filter] -> Either String Filter
-bestFilter significanceLevel tData key = fmap getLowestEntropy . applyGetEntropy . filterFilters significanceLevel tData key
-    where   hasAnyMatches       = not . null . flip filter tData . parseFilter
-            applyGetEntropy     = mapM (getEntropy tData key)
-            getLowestEntropy    = snd . minimumBy compareEntropy
-            compareEntropy      = compare `on` fst
+bestFilter significanceLevel trainingData targetVariable potentialFilters = do
+    let goodFilters = filterFilters significanceLevel trainingData targetVariable potentialFilters
+    filterEntropyPairs <- mapM (getEntropy trainingData targetVariable) goodFilters
+    let (_, bestFilter) = minimumBy (compare `on` fst) filterEntropyPairs
+    return bestFilter
 
 getEntropy :: [Map String Value] -> String -> Filter -> Either String (Float, Filter)
-getEntropy values key f = makePair <$> filteredEntropy f
-    where   filteredEntropy = fmap entropy . extractData key . flip filter values . parseFilter
-            makePair e      = (e, f)
+getEntropy values targetVariable f = do
+    filteredValues <- extractTrainingData targetVariable $ filter (parseFilter f) values
+    return (entropy filteredValues, f)
 
-extractData :: String -> [Map String a] -> Either String [a]
-extractData key = maybe missingKey Right . mapM (Data.Map.lookup key)
-    where   missingKey  = Left $ "missing key in data: " ++ key
+extractTrainingData :: String -> [Map String a] -> Either String [a]
+extractTrainingData targetVariable = maybe missingKey Right . mapM (Data.Map.lookup targetVariable)
+    where   missingKey  = Left $ "missing targetVariable in data: " ++ targetVariable
 
 filterFilters :: Double -> [Map String Value] -> String -> [Filter] -> [Filter]
-filterFilters significanceLevel tData key = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
-    where   hasAnyMatches               = not . null . flip filter tData . parseFilter
-            isStatisticallySignificant  = statisticallySignificant significanceLevel tData key . parseFilter
+filterFilters significanceLevel trainingData targetVariable = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
+    where   hasAnyMatches               = not . null . flip filter trainingData . parseFilter
+            isStatisticallySignificant  = statisticallySignificant significanceLevel trainingData targetVariable . parseFilter

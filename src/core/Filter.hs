@@ -29,16 +29,19 @@ instance FromJSON Filter where
         return Filter{..}
 
 parseFilter :: Filter -> Data.Map.Map String Value -> Bool
-parseFilter NullFilter _ = True
-parseFilter f sample
-    | operator f == "="     = maybe False (== value f) $ Data.Map.lookup (key f) sample
-    | operator f == "!="    = maybe False (/= value f) $ Data.Map.lookup (key f) sample
-    | operator f == "<"     = maybe False id $ do
+parseFilter f = maybe False id . parseFilterInternal f
+
+parseFilterInternal :: Filter -> Data.Map.Map String Value -> Maybe Bool
+parseFilterInternal NullFilter _ = Just True
+parseFilterInternal f sample
+    | operator f == "="     = (== value f) <$> Data.Map.lookup (key f) sample
+    | operator f == "!="    = (/= value f) <$> Data.Map.lookup (key f) sample
+    | operator f == "<"     = do
         sampleValue <- Data.Map.lookup (key f) sample
         parsedValue <- parseNumber sampleValue
         filterValue <- parseNumber (value f)
         return (parsedValue < filterValue)
-    | operator f == ">"     = maybe False id $ do
+    | operator f == ">"     = do
         sampleValue <- Data.Map.lookup (key f) sample
         parsedValue <- parseNumber sampleValue
         filterValue <- parseNumber (value f)

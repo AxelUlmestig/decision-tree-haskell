@@ -1,8 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 module GetFilters (
-    getFilters,
-    parseFilter
+    getFilters
 ) where
 
 import qualified Data.Map (map)
