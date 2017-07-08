@@ -8,6 +8,7 @@ module DecisionTree (
 
 import Data.Aeson
 import Data.Map (Map)
+import Data.Monoid
 import Data.Foldable (asum)
 import Control.Applicative
 
@@ -21,10 +22,17 @@ instance ToJSON DecisionTree where
         toJSON dtr
     toJSON (Question f d1 d2) =
         object [
-            "question" .= toJSON f,
-            "positiveResponse" .= toJSON d1,
-            "negativeResponse" .= toJSON d2
+            "question" .= f,
+            "positiveResponse" .= d1,
+            "negativeResponse" .= d2
         ]
+
+    toEncoding (Answer dtr) =
+        toEncoding dtr
+    toEncoding (Question f d1 d2) =
+        pairs $     "question"          .= f <>
+                    "positiveResponse"  .= d1 <>
+                    "negativeResponse"  .= d2
 
 instance FromJSON DecisionTree where
     parseJSON = withObject "Question or Answer" $ \dt -> asum [

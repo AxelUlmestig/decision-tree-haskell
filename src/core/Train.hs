@@ -8,6 +8,7 @@ module Train (
 import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
 import qualified Data.Map (lookup)
+import Data.Monoid
 import Data.List (group, maximumBy, minimumBy)
 import Data.Function (on)
 import Control.Applicative
@@ -36,6 +37,11 @@ instance ToJSON TrainingResult where
         "model"     .= model tr,
         "metaData"  .= metaData tr
         ]
+
+    toEncoding tr = pairs $
+        "name"      .= name tr <>
+        "metaData"  .= metaData tr <>
+        "model"     .= model tr
 
 instance FromJSON TrainingResult where
     parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "metaData" <*> o .: "model"
