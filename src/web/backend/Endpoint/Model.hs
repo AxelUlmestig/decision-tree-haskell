@@ -7,12 +7,12 @@ module Endpoint.Model (
     evaluate
 ) where
 
+import Control.Arrow (left)
 import Control.Exception (handle)
 import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
 import Data.Map (Map, singleton)
-import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text, unpack)
 import Network.HTTP.Types
 import Network.Wai
@@ -51,25 +51,26 @@ delete = HF.delete modelsDir decodeModel modelFileName . matchModel
 {- evaluate functions -}
 
 evaluate :: Text -> IO ByteString -> IO Response
-evaluate modelName requestBody = requestBody >>= evaluateBody modelName
+evaluate modelName requestBody = do
+    body <- requestBody
+    let eitherMap = parseBody body
+    eitherModel <- getModel modelName
+    let eitherDecisionTreeResult = askTree <$> eitherModel <*> eitherMap
+    let eitherResponse = respond200 . encode <$> eitherDecisionTreeResult
+    either return return eitherResponse
 
-evaluateBody :: Text -> ByteString -> IO Response
-evaluateBody modelName rawBody = fromMaybe badRequest $ evaluateModelPath modelName <$> decodeMap rawBody
-    where   badRequest  = return $ respond400 "send json map representation of measurements"
-            decodeMap   = decode . LazyBS.fromStrict
+parseBody :: ByteString -> Either Response (Map String Value)
+parseBody body = left badRequest . eitherDecode $ LazyBS.fromStrict body
+    where badRequest = \_ -> respond400 "send json representation of data sample"
 
-evaluateModelPath :: Text -> Map String Value -> IO Response
-evaluateModelPath modelName obj = handle handler $ evaluateRawModel obj <$> readFile filePath
-    where   handler     = (\_ -> return (respond404 "model not found")) :: IOError -> IO Response
-            filePath    = modelsDir ++ unpack modelName ++ ".json"
-
-evaluateRawModel :: Map String Value -> String -> Response
-evaluateRawModel obj rawModel = fromMaybe errResponse $ evaluateModel obj <$> decodeDT rawModel
-    where   errResponse = respond500 "error parsing model"
-            decodeDT    = decode . LazyBS.pack
-
-evaluateModel :: Map String Value -> TrainingResult -> Response
-evaluateModel obj = respond200 . encode . flip askTree obj . model
+getModel :: Text -> IO (Either Response DecisionTree)
+getModel modelName = do
+    let filePath = modelsDir ++ unpack modelName ++ ".json"
+    let handler = (\_ -> (return . Left $ respond404 "model not found")) :: IOError -> IO (Either Response LazyBS.ByteString)
+    eitherRawFile <- handle handler $ Right <$> LazyBS.readFile filePath
+    let eitherTrainingResult = eitherRawFile >>= left (\_ -> respond500 "error parsing model") . eitherDecode
+    let eitherDecisionTree = model <$> eitherTrainingResult
+    return eitherDecisionTree
 
 {- misc functions -}
 
