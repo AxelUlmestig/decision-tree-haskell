@@ -10,9 +10,10 @@ import Control.Exception (handle)
 import Data.Aeson
 import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
+import Data.List (find)
 import qualified Data.Map as Map
-import Data.Map (lookup, Map, singleton)
-import Data.Maybe (fromMaybe, isJust)
+import Data.Map (Map, singleton)
+import Data.Maybe (isJust)
 import Data.Text (Text, unpack)
 import Network.HTTP.Types
 import Network.Wai
@@ -25,24 +26,21 @@ class (ToJSON a) => Storable a where
 {- get functions -}
 
 get :: String -> Text -> IO Response
-get dir fileName = handle handler $ respond200 . LazyBS.pack <$> readFile filePath
+get dir fileName = handle handler $ respond200 <$> LazyBS.readFile filePath
     where   filePath    = dir ++ "/" ++ unpack fileName ++ ".json"
             handler     = (\_ -> return (respond404 "file not found")) :: IOError -> IO Response
 
 {- get all functions -}
 
 getAll :: (ToJSON a, FromJSON a) => (LazyBS.ByteString -> Maybe a) -> String -> IO Response
-getAll decodeF dir = respond200 . encode . extractDatasets decodeF <$> getAllRaw dir
+getAll decodeF dir = respond200 . encode <$> getAllInternal decodeF dir
 
-getAllInternal :: FromJSON a => (LazyBS.ByteString -> Maybe a) -> String -> IO [a]
-getAllInternal decodeF dir = extractDatasets decodeF <$> getAllRaw dir
-
-getAllRaw :: String -> IO [String]
-getAllRaw dir = listDirectory dir >>= mapM readDataset
-    where   readDataset = readFile . (dir++)
-
-extractDatasets :: FromJSON a => (LazyBS.ByteString -> Maybe a) -> [String] -> [a]
-extractDatasets decodeF = fromMaybe [] . sequence . filter isJust . map (decodeF . LazyBS.pack)
+getAllInternal :: (ToJSON a, FromJSON a) => (LazyBS.ByteString -> Maybe a) -> String -> IO [a]
+getAllInternal decodeF dir = do
+    fileNames <- listDirectory dir
+    files <- mapM (LazyBS.readFile . (dir++)) fileNames
+    let parsed = maybe [] id . sequence . filter isJust $ map decodeF files
+    return parsed
 
 {- delete functions -}
 
@@ -58,28 +56,24 @@ instance (ToJSON a) => ToJSON (DeleteResponse a) where
         ]
 
 delete :: (FromJSON a, ToJSON a) => String -> (LazyBS.ByteString -> Maybe a) -> (a -> FilePath) -> (a -> Bool) -> IO Response
-delete dir decodeF getFileName match = formatDeleteResponse <$> (getAllInternal decodeF dir >>= deleteDataset dir getFileName . deleteInternal match)
+delete dir decodeF getFileName match = do
+    deletionCandidates <- getAllInternal decodeF dir
+    let notFoundResponse = Left $ respond404 "could not delete object because it could not be found"
+    let deletionTarget = maybe notFoundResponse Right $ find match deletionCandidates
+    let remaining = filter (not . match) deletionCandidates
+    eitherDeleted <- deleteTarget dir getFileName deletionTarget
+    let eitherDeleteResponse = DeleteResponse remaining <$> eitherDeleted
+    let eitherResponse = respond200 . encode <$> eitherDeleteResponse
+    either return return eitherResponse
 
-deleteInternal :: (ToJSON a) => (a -> Bool) -> [a] -> Either String (DeleteResponse a)
-deleteInternal match datasets = DeleteResponse remaining <$> deleted
-    where   remaining   = filter (not . match) datasets
-            deleted     = eitherHead errMessage $ filter match datasets
-            errMessage  = "could not delete object because it could not be found"
-
-deleteDataset :: (ToJSON a) => String -> (a -> FilePath) -> Either String (DeleteResponse a)-> IO (Either String (DeleteResponse a))
-deleteDataset dir getFileName (Left err)    = return (Left err)
-deleteDataset dir getFileName (Right dr)    = removeFile filePath >> return (Right dr)
-    where   filePath    = dir ++ getFileName (deleted dr)
-
-formatDeleteResponse :: (ToJSON a) => Either String (DeleteResponse a) -> Response
-formatDeleteResponse (Left err) = respond404 err
-formatDeleteResponse (Right dr) = respond200 . encode $ dr
+deleteTarget :: String -> (a -> FilePath) -> Either Response a -> IO (Either Response a)
+deleteTarget dir _ (Left response) = return (Left response)
+deleteTarget dir getFileName (Right target) = do
+    let path = dir ++ getFileName target
+    removeFile path
+    return (Right target)
 
 {- misc functions -}
-
-eitherHead :: a -> [b] -> Either a b
-eitherHead err [] = Left err
-eitherHead _ (x:xs) = Right x
 
 formatError :: String -> LazyBS.ByteString
 formatError = encodeMap . singleton "err"
