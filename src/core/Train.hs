@@ -27,6 +27,7 @@ entropyLimit = 0.2
 
 data TrainingResult = TrainingResult {
     name        :: String,
+    target      :: String,
     metaData    :: Map String DataType,
     model       :: DecisionTree
 } deriving (Eq, Show)
@@ -34,17 +35,19 @@ data TrainingResult = TrainingResult {
 instance ToJSON TrainingResult where
     toJSON tr = object [
         "name"      .= name tr,
+        "target"    .= target tr,
         "model"     .= model tr,
         "metaData"  .= metaData tr
         ]
 
     toEncoding tr = pairs $
         "name"      .= name tr <>
+        "target"    .= target tr <>
         "metaData"  .= metaData tr <>
         "model"     .= model tr
 
 instance FromJSON TrainingResult where
-    parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "metaData" <*> o .: "model"
+    parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "target" <*> o .: "metaData" <*> o .: "model"
     parseJSON _             = fail "can't parse object"
 
 {- TrainingResult functions -}
@@ -54,7 +57,7 @@ train significanceLevel dataset targetVariable = do
     let metaData = delete targetVariable $ Dataset.parameters dataset
     let modelName = Dataset.name dataset ++ "_" ++ targetVariable
     model <- trainModel significanceLevel (Dataset.content dataset) targetVariable
-    return $ TrainingResult modelName metaData model
+    return $ TrainingResult modelName targetVariable metaData model
 
 {- DecisionTree construction functions -}
 
