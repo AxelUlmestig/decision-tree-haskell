@@ -16,7 +16,6 @@ import Data.ByteString (ByteString)
 import qualified Data.ByteString.Lazy.Char8 as LazyBS
 import qualified Data.Map as Map
 import Data.Map (lookup, Map, singleton)
-import Data.Maybe (fromMaybe, isJust)
 import Data.Text (Text, unpack)
 import Network.HTTP.Types
 import Network.Wai
@@ -30,10 +29,15 @@ import Dataset
 
 significanceLevel = 0.05
 datasetsDir = "./datasets/"
+modelsDir = "./models/"
 
 instance HF.Storable Dataset where
     match datasetName dataset = datasetName == name dataset
     fileName dataset = name dataset ++ ".json"
+
+instance HF.Storable Train.TrainingResult where
+    match trName trainingResult = trName == Train.name trainingResult
+    fileName trainingResult = Train.name trainingResult ++ ".json"
 
 {- get data set functions -}
 
@@ -78,34 +82,22 @@ delete datasetTextName = do
 {- train data set functions -}
 
 train :: Text -> IO ByteString -> IO Response
-train setName requestBody = do
+train setTextName requestBody = do
+    let setName = unpack setTextName
     body <- requestBody
     let eitherTargetVar = getTargetVar body
-    eitherDataset <- getDataset setName
+    eitherDataset <- left respond404 <$> HF.get datasetsDir setName
     let eitherTrainingResult = Train.train significanceLevel <$> eitherDataset <*> eitherTargetVar >>= left respond400
-    saveTrainingResult eitherTrainingResult
-    return $ either id (respond200 . encode) eitherTrainingResult
+    case eitherTrainingResult of
+        Left errorResponse -> return errorResponse
+        Right trainingResult -> do
+            HF.save modelsDir trainingResult
+            return . respond200 . encode $ trainingResult
 
 getTargetVar :: ByteString -> Either Response String
 getTargetVar body = maybe err Right $ decodeBody body >>= Map.lookup "targetvar"
     where   err         = Left $ respond400 "missing 'targetvar' from body"
             decodeBody  = decode . LazyBS.fromStrict :: ByteString -> Maybe (Map String String)
-
-getDataset :: Text -> IO (Either Response Dataset)
-getDataset setName = do
-    fileContent <- readFile $ datasetsDir ++ unpack setName ++ ".json"
-    let maybeDataset = decode (LazyBS.pack fileContent)
-    let err = Left $ respond500 "could not read dataset"
-    let eitherDataset = maybe err Right maybeDataset
-    let handler = (\_ -> (return . Left $ respond404 "dataset not found")) :: IOError -> IO (Either Response Dataset)
-    handle handler (return eitherDataset)
-
-saveTrainingResult :: Either Response Train.TrainingResult -> IO (Either Response Train.TrainingResult)
-saveTrainingResult (Left response) = return (Left response)
-saveTrainingResult (Right trainingResult) = do
-    let filePath = "./models/" ++ Train.name trainingResult ++ ".json"
-    LazyBS.writeFile filePath (encode trainingResult)
-    return $ Right trainingResult
 
 {- misc functions -}
 
