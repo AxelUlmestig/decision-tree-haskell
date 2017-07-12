@@ -3,7 +3,9 @@
 module Endpoint.Internal.HandleFiles (
     get,
     getAll,
-    delete
+    delete,
+    Storable(..),
+    DeleteResponse
 ) where
 
 import Control.Exception (handle)
@@ -19,27 +21,27 @@ import Network.HTTP.Types
 import Network.Wai
 import System.Directory
 
-class (ToJSON a) => Storable a where
-    match :: Text -> a -> Bool
+class (ToJSON a, FromJSON a) => Storable a where
+    match :: String -> a -> Bool
     fileName :: a -> FilePath
 
 {- get functions -}
 
-get :: String -> Text -> IO Response
-get dir fileName = handle handler $ respond200 <$> LazyBS.readFile filePath
-    where   filePath    = dir ++ "/" ++ unpack fileName ++ ".json"
-            handler     = (\_ -> return (respond404 "file not found")) :: IOError -> IO Response
+get :: Storable a => String -> String -> IO (Either String a)
+get dir objectName = do
+    potentialMatches <- getAll dir
+    let matches = filter (match objectName) potentialMatches
+    case matches of
+        [] -> return $ Left "file not found"
+        (storable:_) -> return $ Right storable
 
 {- get all functions -}
 
-getAll :: (ToJSON a, FromJSON a) => (LazyBS.ByteString -> Maybe a) -> String -> IO Response
-getAll decodeF dir = respond200 . encode <$> getAllInternal decodeF dir
-
-getAllInternal :: (ToJSON a, FromJSON a) => (LazyBS.ByteString -> Maybe a) -> String -> IO [a]
-getAllInternal decodeF dir = do
+getAll :: Storable a => String -> IO [a]
+getAll dir = do
     fileNames <- listDirectory dir
     files <- mapM (LazyBS.readFile . (dir++)) fileNames
-    let parsed = maybe [] id . sequence . filter isJust $ map decodeF files
+    let parsed = maybe [] id . sequence . filter isJust $ map decode files
     return parsed
 
 {- delete functions -}
@@ -55,23 +57,15 @@ instance (ToJSON a) => ToJSON (DeleteResponse a) where
             "remaining" .= remaining dr
         ]
 
-delete :: (FromJSON a, ToJSON a) => String -> (LazyBS.ByteString -> Maybe a) -> (a -> FilePath) -> (a -> Bool) -> IO Response
-delete dir decodeF getFileName match = do
-    deletionCandidates <- getAllInternal decodeF dir
-    let notFoundResponse = Left $ respond404 "could not delete object because it could not be found"
-    let deletionTarget = maybe notFoundResponse Right $ find match deletionCandidates
-    let remaining = filter (not . match) deletionCandidates
-    eitherDeleted <- deleteTarget dir getFileName deletionTarget
-    let eitherDeleteResponse = DeleteResponse remaining <$> eitherDeleted
-    let eitherResponse = respond200 . encode <$> eitherDeleteResponse
-    either return return eitherResponse
-
-deleteTarget :: String -> (a -> FilePath) -> Either Response a -> IO (Either Response a)
-deleteTarget dir _ (Left response) = return (Left response)
-deleteTarget dir getFileName (Right target) = do
-    let path = dir ++ getFileName target
-    removeFile path
-    return (Right target)
+delete :: Storable a => String -> String -> IO (Either String (DeleteResponse a))
+delete dir objectName = do
+    eitherDeleteTarget <- get dir objectName
+    case eitherDeleteTarget of
+        Left err -> return $ Left err
+        Right target -> do
+            removeFile $ dir ++ fileName target
+            remaining <- getAll dir
+            return . Right $ DeleteResponse remaining target
 
 {- misc functions -}
 

@@ -40,15 +40,26 @@ matchDataset setName = (== unpack setName) . name
 datasetFileName :: Dataset -> FilePath
 datasetFileName = (++".json") . name
 
+instance HF.Storable Dataset where
+    match datasetName dataset = datasetName == name dataset
+    fileName dataset = name dataset ++ ".json"
+
 {- get data set functions -}
 
 get :: Text -> IO Response
-get = HF.get datasetsDir
+get datasetTextName = do
+    let datasetName = unpack datasetTextName
+    eitherDataset <- HF.get datasetsDir datasetName :: IO (Either String Dataset)
+    case eitherDataset of
+        Left err -> return $ respond404 err
+        Right dataset -> return . respond200 . encode $ dataset
 
 {- get all datasets functions -}
 
 getAll :: IO Response
-getAll = HF.getAll decodeDataset datasetsDir
+getAll = do
+    datasets <- HF.getAll datasetsDir :: IO [Dataset]
+    return . respond200 . encode $ datasets
 
 {- put data set functions -}
 
@@ -72,7 +83,12 @@ saveMaybeDataset _ Nothing = return $ respond400 "couldn't parse request body as
 {- delete data set functions -}
 
 delete :: Text -> IO Response
-delete = HF.delete datasetsDir decodeDataset datasetFileName . matchDataset
+delete datasetTextName = do
+    let datasetName = unpack datasetTextName
+    eitherDeleteResponse <- HF.delete datasetsDir datasetName :: IO (Either String (HF.DeleteResponse Dataset))
+    case eitherDeleteResponse of
+        Left err -> return . respond404 $ err
+        Right deleteResponse -> return . respond200 . encode $ deleteResponse
 
 {- train data set functions -}
 

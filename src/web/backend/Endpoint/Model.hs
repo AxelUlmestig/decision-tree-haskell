@@ -30,23 +30,36 @@ modelFileName = (++".json") . name
 matchModel :: Text -> TrainingResult -> Bool
 matchModel modelName = (== unpack modelName) . name
 
+instance HF.Storable TrainingResult where
+    match trName trainingResult = trName == name trainingResult
+    fileName trainingResult = name trainingResult ++ ".json"
+
 {- get model functions -}
 
 get :: Text -> IO Response
-get = HF.get modelsDir
+get trainingResultTextName = do
+    let trainingResultName = unpack trainingResultTextName
+    eitherTrainingResult <- HF.get modelsDir trainingResultName :: IO (Either String TrainingResult)
+    case eitherTrainingResult of
+        Left err -> return $ respond404 err
+        Right trainingResult -> return . respond200 . encode $ trainingResult
 
 {- get all models functions -}
 
-decodeModel :: LazyBS.ByteString -> Maybe TrainingResult
-decodeModel = decode
-
 getAll :: IO Response
-getAll = HF.getAll decodeModel modelsDir
+getAll = do
+    trainingResults <- HF.getAll modelsDir :: IO [TrainingResult]
+    return . respond200 . encode $ trainingResults
 
 {- delete model functions -}
 
 delete :: Text -> IO Response
-delete = HF.delete modelsDir decodeModel modelFileName . matchModel
+delete trainingResultTextName = do
+    let trainingResultName = unpack trainingResultTextName
+    eitherDeleteResponse <- HF.delete modelsDir trainingResultName :: IO (Either String (HF.DeleteResponse TrainingResult))
+    case eitherDeleteResponse of
+        Left err -> return . respond404 $ err
+        Right deleteResponse -> return . respond200 . encode $ deleteResponse
 
 {- evaluate functions -}
 
