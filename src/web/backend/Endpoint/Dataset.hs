@@ -31,15 +31,6 @@ import Dataset
 significanceLevel = 0.05
 datasetsDir = "./datasets/"
 
-decodeDataset :: (LazyBS.ByteString -> Maybe Dataset)
-decodeDataset = decode
-
-matchDataset :: Text -> Dataset -> Bool
-matchDataset setName = (== unpack setName) . name
-
-datasetFileName :: Dataset -> FilePath
-datasetFileName = (++".json") . name
-
 instance HF.Storable Dataset where
     match datasetName dataset = datasetName == name dataset
     fileName dataset = name dataset ++ ".json"
@@ -63,22 +54,16 @@ getAll = do
 
 {- put data set functions -}
 
-decodeBody :: ByteString -> Maybe (Map String [Map String Value])
-decodeBody = decode . LazyBS.fromStrict
-
 put :: Text -> IO ByteString -> IO Response
 put setName requestBody = do
-    let filePath = datasetsDir ++ unpack setName ++ ".json"
-    body <- requestBody
-    let maybeRawDataset = decodeBody body >>= Map.lookup "dataset"
-    let maybeDataset = prepareDataset (unpack setName) <$> maybeRawDataset
-    saveMaybeDataset filePath maybeDataset
-
-saveMaybeDataset :: FilePath -> Maybe Dataset -> IO Response
-saveMaybeDataset path (Just dataset) = do
-    LazyBS.writeFile path (encode dataset)
-    return . respond200 $ encode dataset
-saveMaybeDataset _ Nothing = return $ respond400 "couldn't parse request body as dataset"
+    body <- decode . LazyBS.fromStrict <$> requestBody :: IO (Maybe (Map String [Map String Value]))
+    let maybeRawDataset = body >>= Map.lookup "dataset"
+    let maybeDataset = prepareDataset (unpack setName) <$> maybeRawDataset :: Maybe Dataset
+    case maybeDataset of
+        Nothing -> return $ respond400 "couldn't parse request body as dataset"
+        Just dataset -> do
+            HF.save datasetsDir dataset
+            return . respond200 $ encode dataset
 
 {- delete data set functions -}
 

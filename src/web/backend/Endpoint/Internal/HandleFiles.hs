@@ -3,6 +3,7 @@
 module Endpoint.Internal.HandleFiles (
     get,
     getAll,
+    save,
     delete,
     Storable(..),
     DeleteResponse
@@ -43,6 +44,14 @@ getAll dir = do
     files <- mapM (LazyBS.readFile . (dir++)) fileNames
     let parsed = maybe [] id . sequence . filter isJust $ map decode files
     return parsed
+
+{- save functions -}
+
+save :: Storable a => String -> a -> IO a
+save dir storable = do
+    let path = dir ++ "/" ++ fileName storable
+    LazyBS.writeFile path (encode storable)
+    return storable
 
 {- delete functions -}
 
