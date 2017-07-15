@@ -36,7 +36,7 @@ const train = () => (state, props) => {
 export default class Train extends misc.FunctionalComponent {
 
     constructor(props) {
-        super();
+        super(props);
         const emptyDataset = {name: '', parameters: []};
         const selectedDataset = props.datasets[0] || emptyDataset;
         const selectedVar = Object.keys(selectedDataset.parameters)[0] || '';
@@ -44,6 +44,13 @@ export default class Train extends misc.FunctionalComponent {
             selectedDataset: selectedDataset,
             selectedVar: selectedVar
         };
+    }
+
+    componentWillReceiveProps(props) {
+        this.setState(_ => ({
+            selectedDataset: props.datasets[0],
+            selectedVar: Object.keys(props.datasets[0].parameters)[0]
+        }));
     }
 
     render() {
