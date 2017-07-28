@@ -125,6 +125,19 @@ train9 = TestCase $ assertBool "train modelName on non-existing key" (isLeft tre
             k2      = "key 2"
             k2v     = "value"
 
+train10 = TestCase $ assertEqual "extract most common output from dataset 1" expected actual
+    where   expected        = Right "b"
+            actual          = answer . flip askTree Data.Map.empty . model <$> tree
+            tree            = train 0.01 trainingDataset key
+            trainingDataset = createDataset [singleton key (String "a"), singleton key (String "b"), singleton key (String "c"), singleton key (String "b")]
+            key             = "key"
+
+train11 = TestCase $ assertEqual "extract most common output from dataset 2" expected actual
+    where   expected        = Right "a"
+            actual          = answer . flip askTree Data.Map.empty . model <$> tree
+            tree            = train 0.01 trainingDataset key
+            trainingDataset = createDataset [singleton key (String "a"), singleton key (String "b"), singleton key (String "a"), singleton key (String "c")]
+            key             = "key"
 
 labels = ["train" ++ show n | n <- [1..]]
 
@@ -137,7 +150,9 @@ testCases = [
         train6,
         train7,
         train8,
-        train9
+        train9,
+        train10,
+        train11
     ]
 
 tests = hUnitTestToTests . TestList . zipWith TestLabel labels $ testCases

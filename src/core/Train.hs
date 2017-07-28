@@ -9,7 +9,7 @@ import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
 import qualified Data.Map (lookup)
 import Data.Monoid
-import Data.List (group, maximumBy, minimumBy)
+import Data.List (group, maximumBy, minimumBy, sort)
 import Data.Function (on)
 import Control.Applicative
 
@@ -83,7 +83,7 @@ constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
 constructAnswer _ []        = Left "can't construct Answer from empty data set"
 constructAnswer targetVariable rawData = do
     pureData <- extractTrainingData targetVariable rawData
-    let value = head . maximumBy (compare `on` length) . group $ pureData
+    let value = head . maximumBy (compare `on` length) . group . sort $ pureData
     let sampleSize = length pureData
     let confidence = (/ fromIntegral sampleSize) . fromIntegral . length . filter (==value) $ pureData
     return . Answer $ DecisionTreeResult value confidence sampleSize
