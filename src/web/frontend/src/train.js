@@ -56,18 +56,23 @@ export default class Train extends misc.FunctionalComponent {
     render() {
         return (
             <div>
-                <b>Train on datasets</b><br/>
-                <form>
-                    Choose dataset to train on:
-                    <select value={this.selectedDataset} onChange={this.update(handleDatasetChange)}>
-                        {renderOptions(d => d.name, this.props.datasets)}
-                    </select><br/>
-                    Choose variable to train on:
-                    <select value={this.selectedVar} onChange={this.update(handleVarChange)}>
-                        {renderOptions(v => v, Object.keys(this.state.selectedDataset.parameters))}
-                    </select>
-                </form><br/>
-                <button onClick={this.update(train)}>Train</button>
+                <div className="headerWrapper">
+                    <div className="header">Train on datasets</div>
+                </div>
+                <br/>
+                <div className="rounded">
+                    <form>
+                        Choose dataset to train on:
+                        <select value={this.selectedDataset} onChange={this.update(handleDatasetChange)}>
+                            {renderOptions(d => d.name, this.props.datasets)}
+                        </select><br/>
+                        Choose variable to train on:
+                        <select value={this.selectedVar} onChange={this.update(handleVarChange)}>
+                            {renderOptions(v => v, Object.keys(this.state.selectedDataset.parameters))}
+                        </select>
+                    </form><br/>
+                    <button onClick={this.update(train)}>Train</button>
+                </div>
             </div>
         )
     }

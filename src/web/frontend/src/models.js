@@ -91,6 +91,8 @@ class Model extends misc.FunctionalComponent {
 
 export default props =>
     <div>
-        <b>Models</b>
+        <div className="headerWrapper">
+            <div className="header">Models</div>
+        </div>
         <ul>{iterateModels(props.models, props.evaluate, props.deleteModel)}</ul>
     </div>

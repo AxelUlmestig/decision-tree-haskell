@@ -33,7 +33,9 @@ const handleFileInternal = handleFile => () => {
 
 export default props =>
     <div>
-        <b>Datasets</b>
+        <div className="headerWrapper">
+            <div className="header">Datasets</div>
+        </div>
         <ul>{iterateDatasets(props.datasets, props.deleteDataset)}</ul>
         {createUploadButton(props.uploadDataset)}
     </div>

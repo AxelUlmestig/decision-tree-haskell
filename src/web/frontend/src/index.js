@@ -1,6 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 
+import './index.css';
+
 import misc from './misc.js';
 
 import Datasets from './datasets.js';
@@ -47,7 +49,7 @@ class Main extends misc.FunctionalComponent {
 
     render() {
         return (
-            <div>
+            <div className="main">
                 <Datasets
                     datasets={this.state.datasets}
                     uploadDataset={uploadDataset(this.update(addDataset))}
