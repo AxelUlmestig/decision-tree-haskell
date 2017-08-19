@@ -4,15 +4,29 @@ const inputId = 'dataset_file';
 
 const iterateDatasets = (datasets, deleteDataset) =>
     datasets.map(dataset =>
-        <div key={dataset.name} className='rounded'>
-            {dataset.name} <button onClick={() => deleteDataset(dataset.name)}>Delete</button>
+        <div className='deleteButtonWrapper rounded'>
+            {dataset.name}
+            <img
+                className='deleteButton clickable'
+                src={require('./static/delete-button.png')}
+                onClick={() => deleteDataset(dataset.name)}>
+            </img>
         </div>
     )
 
 const createUploadButton = handleFile =>
     <div>
-        <input type='file' onChange={handleFileInternal(handleFile)} id={inputId} style={{'display': 'none'}}></input>
-        <div className='rounded clickable centeredWrapper' onClick={() => document.getElementById(inputId).click()}>Upload Dataset</div>
+        <input
+            type='file'
+            onChange={handleFileInternal(handleFile)}
+            id={inputId}
+            style={{'display': 'none'}}>
+        </input>
+        <div
+            className='rounded clickable centeredWrapper'
+            onClick={() => document.getElementById(inputId).click()}>
+            Upload Dataset
+        </div>
     </div>
 
 const handleFileInternal = handleFile => input => {

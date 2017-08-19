@@ -3,21 +3,21 @@ import misc from './misc';
 
 const iterateModels = (models, evaluate, deleteModel) =>
     models.map(model =>
-        <li key={model.name}>
+        <div key={model.name} className='rounded'>
             <Model model={model} evaluate={evaluate} deleteModel={deleteModel} />
-        </li>
+        </div>
     )
 
 const iterateParameters = (parameters, updateParam) =>
         Object.keys(parameters).map(param => (
-            <li key={param}>
+            <div key={param} className='rounded'>
                 {param + ': '}
                 <input
                     type={parameters[param].type}
                     value={parameters[param].value}
                     onChange={misc.getEventValue(updateParam(param), parameters[param].type)}
                 />
-            </li>
+            </div>
         ));
 
 const updateParameter = param => value => state =>
@@ -63,15 +63,28 @@ class Model extends misc.FunctionalComponent {
         const model = this.props.model;
         return (
             <div>
-                {model.name} <button onClick={() => this.props.deleteModel(model.name)}>Delete</button>
-                <ul>
+                <div className='deleteButtonWrapper'>
+                    <img
+                        className='deleteButton clickable'
+                        src={require('./static/delete-button.png')}
+                        onClick={() => this.props.deleteModel(model.name)}>
+                    </img>
+                    {model.name}
+                </div>
+                <div className='horizontallyPadded'>
                     {iterateParameters(
                             this.state.parameters,
                             param => this.update(updateParameter(param))
                     )}
-                </ul>
-                <button onClick={this.evaluate}>Evaluate</button>
-                <div>Result: {this.state.result}</div>
+                    <div className='rounded'>
+                        {this.props.model.target + ':'}
+                        <input
+                            value={this.state.result}
+                            disabled='disabled'
+                        />
+                    </div>
+                    <div onClick={this.evaluate} className='rounded clickable centeredWrapper'>Evaluate</div>
+                </div>
             </div>
         )
     }
@@ -94,5 +107,5 @@ export default props =>
         <div className="headerWrapper">
             <div className="header">Models</div>
         </div>
-        <ul>{iterateModels(props.models, props.evaluate, props.deleteModel)}</ul>
+        {iterateModels(props.models, props.evaluate, props.deleteModel)}
     </div>

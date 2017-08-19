@@ -48,7 +48,7 @@ li button, .rounded button {
   float: right;
 }
 
-li input {
+li input, .rounded input {
   float: right;
 }
 
@@ -63,4 +63,27 @@ li input {
 .padded {
   padding-top: 0.1rem;
   padding-bottom: 0.1rem;
+}
+
+.horizontallyPadded {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+
+.deleteButton {
+  float: right;
+  height: 100%;
+  height: 1.5rem;
+  width: 100%;
+  width: 1.5rem;
+}
+
+.deleteButtonWrapper {
+  position: relative;
+  overflow: hidden;
+}
+
+.verticallyAligned {
+  display: flex;
+  align-items: center;
 }
