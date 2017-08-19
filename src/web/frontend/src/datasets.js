@@ -4,20 +4,20 @@ const inputId = 'dataset_file';
 
 const iterateDatasets = (datasets, deleteDataset) =>
     datasets.map(dataset =>
-        <li key={dataset.name}>
+        <div key={dataset.name} className='rounded'>
             {dataset.name} <button onClick={() => deleteDataset(dataset.name)}>Delete</button>
-        </li>
+        </div>
     )
 
 const createUploadButton = handleFile =>
     <div>
-        <input type='file' id={inputId}></input><br/>
-        <button onClick={handleFileInternal(handleFile)}>Upload Dataset</button>
+        <input type='file' onChange={handleFileInternal(handleFile)} id={inputId} style={{'display': 'none'}}></input>
+        <div className='rounded clickable centeredWrapper' onClick={() => document.getElementById(inputId).click()}>Upload Dataset</div>
     </div>
 
-const handleFileInternal = handleFile => () => {
-    const files = document.getElementById(inputId).files;
-    if (files.length <= 0) return false;
+const handleFileInternal = handleFile => input => {
+    console.log(input);
+    const files = input.target.files;
 
     const fr = new FileReader();
 
@@ -36,6 +36,6 @@ export default props =>
         <div className="headerWrapper">
             <div className="header">Datasets</div>
         </div>
-        <ul>{iterateDatasets(props.datasets, props.deleteDataset)}</ul>
+        {iterateDatasets(props.datasets, props.deleteDataset)}
         {createUploadButton(props.uploadDataset)}
     </div>

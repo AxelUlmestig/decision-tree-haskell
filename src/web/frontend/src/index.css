@@ -30,15 +30,37 @@
   padding: 0.3rem;
 }
 
+.centeredWrapper {
+  text-align: center;
+}
+
+.centered {
+  display: flex;
+  justify-content: center;
+}
+
 ul {
   padding-left: 2rem;
   padding-right: 2rem;
 }
 
-li button {
+li button, .rounded button {
   float: right;
 }
 
 li input {
   float: right;
+}
+
+.clickable {
+  cursor: pointer;
+}
+
+.justifyRight {
+  float: right;
+}
+
+.padded {
+  padding-top: 0.1rem;
+  padding-bottom: 0.1rem;
 }

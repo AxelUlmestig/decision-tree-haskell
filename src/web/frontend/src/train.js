@@ -56,22 +56,32 @@ export default class Train extends misc.FunctionalComponent {
     render() {
         return (
             <div>
-                <div className="headerWrapper">
-                    <div className="header">Train on datasets</div>
+                <div className='headerWrapper'>
+                    <div className='header'>Train on datasets</div>
                 </div>
                 <br/>
-                <div className="rounded">
-                    <form>
-                        Choose dataset to train on:
-                        <select value={this.selectedDataset} onChange={this.update(handleDatasetChange)}>
-                            {renderOptions(d => d.name, this.props.datasets)}
-                        </select><br/>
-                        Choose variable to train on:
-                        <select value={this.selectedVar} onChange={this.update(handleVarChange)}>
-                            {renderOptions(v => v, Object.keys(this.state.selectedDataset.parameters))}
-                        </select>
-                    </form><br/>
-                    <button onClick={this.update(train)}>Train</button>
+                <div>
+                    <form className='rounded'>
+                        <div className='padded'>
+                            Choose dataset to train on:
+                            <select
+                                value={this.selectedDataset}
+                                onChange={this.update(handleDatasetChange)}
+                                className='justifyRight'>
+                                {renderOptions(d => d.name, this.props.datasets)}
+                            </select>
+                        </div>
+                        <div className='padded'>
+                            Choose variable to train on:
+                            <select
+                                value={this.selectedVar}
+                                onChange={this.update(handleVarChange)}
+                                className='justifyRight'>
+                                {renderOptions(v => v, Object.keys(this.state.selectedDataset.parameters))}
+                            </select>
+                        </div>
+                    </form>
+                    <div onClick={this.update(train)} className='rounded clickable centeredWrapper'>Train</div>
                 </div>
             </div>
         )
