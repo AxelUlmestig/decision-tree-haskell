@@ -64,12 +64,14 @@ class Model extends misc.FunctionalComponent {
         return (
             <div>
                 <div className='deleteButtonWrapper'>
+                    <div className='verticallyAlignedWrapper'>
+                        {model.name}
+                    </div>
                     <img
                         className='deleteButton clickable'
                         src={require('./static/delete-button.png')}
                         onClick={() => this.props.deleteModel(model.name)}>
                     </img>
-                    {model.name}
                 </div>
                 <div className='horizontallyPadded'>
                     {iterateParameters(

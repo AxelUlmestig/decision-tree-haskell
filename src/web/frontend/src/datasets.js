@@ -5,7 +5,9 @@ const inputId = 'dataset_file';
 const iterateDatasets = (datasets, deleteDataset) =>
     datasets.map(dataset =>
         <div className='deleteButtonWrapper rounded'>
-            {dataset.name}
+            <div className='verticallyAlignedWrapper'>
+                {dataset.name}
+            </div>
             <img
                 className='deleteButton clickable'
                 src={require('./static/delete-button.png')}
