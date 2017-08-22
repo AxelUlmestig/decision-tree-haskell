@@ -1,10 +1,10 @@
 import React from 'react';
-import misc from './misc.js';
+import styled from 'styled-components';
 
-const renderOptions = (f, datasets) =>
-    datasets.map((dataset, i) =>
-        <option key={f(dataset)} value={i}>{f(dataset)}</option>
-    )
+import misc from './misc.js';
+import SectionHeader from './sectionheader.js';
+import Button from './button.js';
+import Rounded from './rounded.js';
 
 const handleVarChange = misc.getEventValue(
         i => state =>
@@ -33,6 +33,36 @@ const train = () => (state, props) => {
    return state;
 }
 
+const Padded = styled.div`
+    padding-top: 0.1rem;
+    padding-bottom: 0.1rem;
+`
+
+const RightJustifiedSelect = styled.select`
+    float: right;
+`
+
+const VariableSelect = props => {
+
+    const options = props.options.map((option, i) =>
+        <option
+            key={props.displayOption(option)}
+            value={i}>
+            {props.displayOption(option)}
+        </option>
+    )
+
+    return <Padded>
+        {props.text}
+        <RightJustifiedSelect
+            value={props.selectedDataset}
+            onChange={props.onChange}>
+            {options}
+        </RightJustifiedSelect>
+    </Padded>
+
+}
+
 export default class Train extends misc.FunctionalComponent {
 
     constructor(props) {
@@ -47,7 +77,7 @@ export default class Train extends misc.FunctionalComponent {
     }
 
     componentWillReceiveProps(props) {
-        this.setState(_ => ({
+        this.setState(() => ({
             selectedDataset: props.datasets[0],
             selectedVar: Object.keys(props.datasets[0].parameters)[0]
         }));
@@ -56,33 +86,24 @@ export default class Train extends misc.FunctionalComponent {
     render() {
         return (
             <div>
-                <div className='headerWrapper'>
-                    <div className='header'>Train on datasets</div>
-                </div>
-                <br/>
-                <div>
-                    <form className='rounded'>
-                        <div className='padded'>
-                            Choose dataset to train on:
-                            <select
-                                value={this.selectedDataset}
-                                onChange={this.update(handleDatasetChange)}
-                                className='justifyRight'>
-                                {renderOptions(d => d.name, this.props.datasets)}
-                            </select>
-                        </div>
-                        <div className='padded'>
-                            Choose variable to train on:
-                            <select
-                                value={this.selectedVar}
-                                onChange={this.update(handleVarChange)}
-                                className='justifyRight'>
-                                {renderOptions(v => v, Object.keys(this.state.selectedDataset.parameters))}
-                            </select>
-                        </div>
-                    </form>
-                    <div onClick={this.update(train)} className='rounded clickable centeredWrapper'>Train</div>
-                </div>
+                <SectionHeader value='Train on datasets'></SectionHeader>
+                <Rounded>
+                    <VariableSelect
+                        text='Choose dataset to train on:'
+                        options={this.props.datasets}
+                        displayOption={dataset => dataset.name}
+                        value={this.selectedDataset}
+                        onChange={this.update(handleDatasetChange)}>
+                    </VariableSelect>
+                    <VariableSelect
+                        text='Choose variable to train on:'
+                        options={Object.keys(this.state.selectedDataset.parameters)}
+                        displayOption={param => param}
+                        value={this.selectedVar}
+                        onChange={this.update(handleVarChange)}>
+                    </VariableSelect>
+                </Rounded>
+                <Button label='Train' action={this.update(train)}></Button>
             </div>
         )
     }

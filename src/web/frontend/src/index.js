@@ -1,7 +1,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
-
-import './index.css';
+import styled from 'styled-components';
 
 import misc from './misc.js';
 
@@ -24,6 +23,15 @@ const addDataset = dataset => state =>
     ({
         datasets: state.datasets.concat([dataset])
     })
+
+const MainColumn = styled.div`
+    box-sizing: border-box;
+    max-width: 100%;
+    max-width: 600px;
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+`
 
 class Main extends misc.FunctionalComponent {
 
@@ -49,7 +57,7 @@ class Main extends misc.FunctionalComponent {
 
     render() {
         return (
-            <div className="main">
+            <MainColumn>
                 <Datasets
                     datasets={this.state.datasets}
                     uploadDataset={uploadDataset(this.update(addDataset))}
@@ -64,7 +72,7 @@ class Main extends misc.FunctionalComponent {
                     evaluate={evaluate}
                     deleteModel={deleteModel(res => this.setVariable('models')(res.remaining))}
                 />
-            </div>
+            </MainColumn>
         );
     }
 

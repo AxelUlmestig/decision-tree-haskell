@@ -1,24 +1,11 @@
 import React from 'react';
+import styled from 'styled-components';
+
 import misc from './misc';
-
-const iterateModels = (models, evaluate, deleteModel) =>
-    models.map(model =>
-        <div key={model.name} className='rounded'>
-            <Model model={model} evaluate={evaluate} deleteModel={deleteModel} />
-        </div>
-    )
-
-const iterateParameters = (parameters, updateParam) =>
-        Object.keys(parameters).map(param => (
-            <div key={param} className='rounded'>
-                {param + ': '}
-                <input
-                    type={parameters[param].type}
-                    value={parameters[param].value}
-                    onChange={misc.getEventValue(updateParam(param), parameters[param].type)}
-                />
-            </div>
-        ));
+import SectionHeader from './sectionheader.js';
+import Button from './button.js';
+import ItemHeader from './itemheader.js';
+import Rounded from './rounded.js';
 
 const updateParameter = param => value => state =>
     {
@@ -26,6 +13,26 @@ const updateParameter = param => value => state =>
         newState.parameters[param].value = value;
         return newState;
     }
+
+const FloatRightInput = styled.input`
+    float: right;
+`
+
+const ModelParameter = props =>
+    <Rounded key={props.name}>
+        {props.name + ': '}
+        <FloatRightInput
+            type={props.type}
+            value={props.value}
+            onChange={props.onChange || (x => x)}
+            disabled={props.disabled || ''}
+        />
+    </Rounded>
+
+const HorizontallyPadded = styled.div`
+    padding-left: 2rem;
+    padding-right: 2rem;
+`
 
 const dataTypes = {
     'NUMBER': 'number',
@@ -61,32 +68,33 @@ class Model extends misc.FunctionalComponent {
 
     render() {
         const model = this.props.model;
+        const parameters = this.state.parameters;
         return (
             <div>
-                <div className='deleteButtonWrapper'>
-                    <div className='verticallyAlignedWrapper'>
-                        {model.name}
-                    </div>
-                    <img
-                        className='deleteButton clickable'
-                        src={require('./static/delete-button.png')}
-                        onClick={() => this.props.deleteModel(model.name)}>
-                    </img>
-                </div>
-                <div className='horizontallyPadded'>
-                    {iterateParameters(
-                            this.state.parameters,
-                            param => this.update(updateParameter(param))
+                <ItemHeader
+                    text={model.name}
+                    close={() => this.props.deleteModel(model.name)}>
+                </ItemHeader>
+                <HorizontallyPadded>
+                    {Object.keys(parameters).map(param =>
+                        <ModelParameter
+                            name={param}
+                            type={parameters[param].type}
+                            value={parameters[param].value}
+                            onChange={misc.getEventValue(
+                                this.update(updateParameter(param)),
+                                parameters[param].type
+                            )}>
+                        </ModelParameter>
                     )}
-                    <div className='rounded'>
-                        {this.props.model.target + ':'}
-                        <input
-                            value={this.state.result}
-                            disabled='disabled'
-                        />
-                    </div>
-                    <div onClick={this.evaluate} className='rounded clickable centeredWrapper'>Evaluate</div>
-                </div>
+                    <ModelParameter
+                        name={this.props.model.target}
+                        type={'text'}
+                        value={this.state.result}
+                        disabled={'disabled'}>
+                    </ModelParameter>
+                    <Button label='Evaluate' action={this.evaluate}></Button>
+                </HorizontallyPadded>
             </div>
         )
     }
@@ -106,8 +114,10 @@ class Model extends misc.FunctionalComponent {
 
 export default props =>
     <div>
-        <div className="headerWrapper">
-            <div className="header">Models</div>
-        </div>
-        {iterateModels(props.models, props.evaluate, props.deleteModel)}
+        <SectionHeader value='Models'></SectionHeader>
+        {props.models.map(model =>
+            <Rounded key={model.name}>
+                <Model model={model} evaluate={props.evaluate} deleteModel={props.deleteModel} />
+            </Rounded>
+        )}
     </div>
