@@ -1,10 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import misc from './misc.js';
-import SectionHeader from './sectionheader.js';
-import Button from './button.js';
-import Rounded from './rounded.js';
+import misc from '../misc/misc.js';
+import SectionHeader from '../misc/sectionheader.js';
+import Button from '../misc/button.js';
+import Rounded from '../misc/rounded.js';
+import VariableSelect from './variableselect.js';
 
 const handleVarChange = misc.getEventValue(
         i => state =>
@@ -31,36 +32,6 @@ const train = () => (state, props) => {
        props.train(selectedDataset.name, selectedVar);
    }
    return state;
-}
-
-const Padded = styled.div`
-    padding-top: 0.1rem;
-    padding-bottom: 0.1rem;
-`
-
-const RightJustifiedSelect = styled.select`
-    float: right;
-`
-
-const VariableSelect = props => {
-
-    const options = props.options.map((option, i) =>
-        <option
-            key={props.displayOption(option)}
-            value={i}>
-            {props.displayOption(option)}
-        </option>
-    )
-
-    return <Padded>
-        {props.text}
-        <RightJustifiedSelect
-            value={props.selectedDataset}
-            onChange={props.onChange}>
-            {options}
-        </RightJustifiedSelect>
-    </Padded>
-
 }
 
 export default class Train extends misc.FunctionalComponent {

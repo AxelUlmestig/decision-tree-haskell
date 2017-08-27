@@ -27,7 +27,7 @@ const ItemHeader = props => (
     <Wrapper>
         <TextContent>{props.text}</TextContent>
         <DeleteButton
-            src={require('./static/delete-button.png')}
+            src={require('../static/delete-button.png')}
             onClick={props.close}>
         </DeleteButton>
     </Wrapper>

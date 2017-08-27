@@ -1,27 +1,14 @@
 import React from 'react';
 
-import SectionHeader from './sectionheader.js';
-import Button from './button.js';
-import ItemHeader from './itemheader.js';
-import Rounded from './rounded.js';
+import Button from '../misc/button.js';
 
 const inputId = 'dataset_file';
 
-const iterateDatasets = (datasets, deleteDataset) =>
-    datasets.map(dataset => 
-        <Rounded>
-            <ItemHeader
-                text={dataset.name}
-                close={() => deleteDataset(dataset.name)}>
-            </ItemHeader>
-        </Rounded>
-    )
-
-const createUploadButton = handleFile =>
+const UploadButton = props =>
     <div>
         <input
             type='file'
-            onChange={handleFileInternal(handleFile)}
+            onChange={handleFileInternal(props.uploadDataset)}
             id={inputId}
             style={{'display': 'none'}}>
         </input>
@@ -47,9 +34,4 @@ const handleFileInternal = handleFile => input => {
     fr.readAsText(files[0]);
 }
 
-export default props =>
-    <div>
-        <SectionHeader value='Datasets'></SectionHeader>
-        {iterateDatasets(props.datasets, props.deleteDataset)}
-        {createUploadButton(props.uploadDataset)}
-    </div>
+export default UploadButton

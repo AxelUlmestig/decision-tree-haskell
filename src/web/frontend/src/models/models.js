@@ -1,11 +1,12 @@
 import React from 'react';
 import styled from 'styled-components';
 
-import misc from './misc';
-import SectionHeader from './sectionheader.js';
-import Button from './button.js';
-import ItemHeader from './itemheader.js';
-import Rounded from './rounded.js';
+import misc from '../misc/misc.js';
+import SectionHeader from '../misc/sectionheader.js';
+import Button from '../misc/button.js';
+import ItemHeader from '../misc/itemheader.js';
+import Rounded from '../misc/rounded.js';
+import ModelParameter from './modelparameter.js';
 
 const updateParameter = param => value => state =>
     {
@@ -13,21 +14,6 @@ const updateParameter = param => value => state =>
         newState.parameters[param].value = value;
         return newState;
     }
-
-const FloatRightInput = styled.input`
-    float: right;
-`
-
-const ModelParameter = props =>
-    <Rounded key={props.name}>
-        {props.name + ': '}
-        <FloatRightInput
-            type={props.type}
-            value={props.value}
-            onChange={props.onChange || (x => x)}
-            disabled={props.disabled || ''}
-        />
-    </Rounded>
 
 const HorizontallyPadded = styled.div`
     padding-left: 2rem;

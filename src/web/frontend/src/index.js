@@ -2,11 +2,11 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import styled from 'styled-components';
 
-import misc from './misc.js';
+import misc from './misc/misc.js';
 
-import Datasets from './datasets.js';
-import Models from './models.js';
-import Train from './train.js';
+import Datasets from './datasets/datasets.js';
+import Models from './models/models.js';
+import Train from './train/train.js';
 
 import uploadDataset from './communication/uploaddataset.js';
 import deleteDataset from './communication/deletedataset.js';
