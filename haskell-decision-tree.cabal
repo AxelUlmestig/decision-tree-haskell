@@ -1,6 +1,5 @@
 name:                haskell-decision-tree
 version:             0.1.0.0
-license-file:        LICENSE
 author:              axel.ulmestig@gmail.com
 maintainer:          axel.ulmestig@gmail.com
 build-type:          Simple
@@ -8,7 +7,7 @@ cabal-version:       >=1.10
 
 executable server
   main-is:             Main.hs
-  build-depends:       base >=4.8 && <4.9,
+  build-depends:       base,
                        warp,
                        wai,
                        wai-middleware-static,
@@ -22,6 +21,18 @@ executable server
                        statistics
   hs-source-dirs:      src/core, src/web/backend
   default-language:    Haskell2010
+  other-modules:       Dataset,
+                       DecisionTree
+                       Endpoint.Dataset
+                       Endpoint.Index
+                       Endpoint.Internal.HandleFiles
+                       Endpoint.Model
+                       Entropy
+                       Filter
+                       GetFilters
+                       GetMetaData
+                       StatisticalSignificance
+                       Train
 
 executable build-frontend
   main-is:             BuildFrontend.hs
@@ -43,3 +54,16 @@ Test-Suite TestSuite
                        statistics
   default-language:    Haskell2010
   ghc-options: -fno-warn-tabs
+  other-modules:       Dataset
+                       DecisionTree
+                       DecisionTreeTest
+                       Entropy
+                       EntropyTest
+                       Filter
+                       FilterTest
+                       GetFilters
+                       GetMetaData
+                       StatisticalSignificance
+                       StatisticsTest
+                       Train
+                       TrainTest
