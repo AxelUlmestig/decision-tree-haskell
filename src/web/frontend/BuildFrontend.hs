@@ -1,3 +1,3 @@
 import System.Process
 
-main = runCommand "cd src/web/frontend && npm run build"
+main = callCommand "npm run build --prefix src/web/frontend"
