@@ -3,7 +3,9 @@ const train = cb => (dataset, target) =>
     fetch('/api/dataset/' + dataset + '/train', {
         method: 'POST',
         body: JSON.stringify({
-            targetvar: target
+            targetVariable: target,
+            significanceLevel: 0.005,
+            entropyLimit: 0.2
         })
     })
     .then(res => res.json())

@@ -27,7 +27,6 @@ import qualified Train
 import DecisionTree
 import Dataset
 
-significanceLevel = 0.05
 datasetsDir = "./datasets/"
 modelsDir = "./models/"
 
@@ -85,19 +84,18 @@ train :: Text -> IO ByteString -> IO Response
 train setTextName requestBody = do
     let setName = unpack setTextName
     body <- requestBody
-    let eitherTargetVar = getTargetVar body
+    let eitherTrainingParameters = parseTrainingParameters body
     eitherDataset <- left respond404 <$> HF.get datasetsDir setName
-    let eitherTrainingResult = Train.train significanceLevel <$> eitherDataset <*> eitherTargetVar >>= left respond400
+    let eitherTrainingResult = Train.train <$> eitherTrainingParameters <*> eitherDataset >>= left respond400
     case eitherTrainingResult of
         Left errorResponse -> return errorResponse
         Right trainingResult -> do
             HF.save modelsDir trainingResult
             return . respond200 . encode $ trainingResult
 
-getTargetVar :: ByteString -> Either Response String
-getTargetVar body = maybe err Right $ decodeBody body >>= Map.lookup "targetvar"
-    where   err         = Left $ respond400 "missing 'targetvar' from body"
-            decodeBody  = decode . LazyBS.fromStrict :: ByteString -> Maybe (Map String String)
+parseTrainingParameters :: ByteString -> Either Response Train.TrainingParameters
+parseTrainingParameters = maybe err Right . decode . LazyBS.fromStrict
+    where   err = Left $ respond400 "Failed to parse body. Required parameters: targetVariable, significanceLevel & entropyLimit"
 
 {- misc functions -}
 

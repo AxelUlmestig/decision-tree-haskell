@@ -2,6 +2,7 @@
 
 module Train (
     train,
+    TrainingParameters(..),
     TrainingResult(..)
 ) where
 
@@ -21,62 +22,80 @@ import GetMetaData
 import Entropy
 import StatisticalSignificance
 
-entropyLimit = 0.2
-
 {- TrainingResult data type -}
 
 data TrainingResult = TrainingResult {
-    name        :: String,
-    target      :: String,
-    metaData    :: Map String DataType,
-    model       :: DecisionTree
+    name                :: String,
+    trainingParameters  :: TrainingParameters,
+    metaData            :: Map String DataType,
+    model               :: DecisionTree
 } deriving (Eq, Show)
 
 instance ToJSON TrainingResult where
     toJSON tr = object [
-        "name"      .= name tr,
-        "target"    .= target tr,
-        "model"     .= model tr,
-        "metaData"  .= metaData tr
+        "name"                  .= name tr,
+        "trainingParameters"    .= trainingParameters tr,
+        "model"                 .= model tr,
+        "metaData"              .= metaData tr
         ]
 
     toEncoding tr = pairs $
-        "name"      .= name tr <>
-        "target"    .= target tr <>
-        "metaData"  .= metaData tr <>
-        "model"     .= model tr
+        "name"                  .= name tr <>
+        "trainingParameters"    .= trainingParameters tr <>
+        "metaData"              .= metaData tr <>
+        "model"                 .= model tr
 
 instance FromJSON TrainingResult where
-    parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "target" <*> o .: "metaData" <*> o .: "model"
+    parseJSON (Object o)    = TrainingResult <$> o .: "name" <*> o .: "trainingParameters" <*> o .: "metaData" <*> o .: "model"
     parseJSON _             = fail "can't parse object"
+
+{- TrainingParameters data type -}
+
+data TrainingParameters = TrainingParameters {
+    targetVariable      :: String,
+    significanceLevel   :: Double,
+    entropyLimit        :: Float
+} deriving (Eq, Show)
+
+instance ToJSON TrainingParameters where
+    toJSON tp = object [
+        "targetVariable"    .= targetVariable tp,
+        "significanceLevel" .= significanceLevel tp,
+        "entropyLimit"      .= entropyLimit tp
+        ]
+
+instance FromJSON TrainingParameters where
+    parseJSON (Object o)    = TrainingParameters <$> o .: "targetVariable" <*> o .: "significanceLevel" <*> o .: "entropyLimit"
+    parseJSON _             = fail "can't parse object"
+
 
 {- TrainingResult functions -}
 
-train :: Double -> Dataset.Dataset -> String -> Either String TrainingResult
-train significanceLevel dataset targetVariable = do
-    let metaData = delete targetVariable $ Dataset.parameters dataset
-    let modelName = Dataset.name dataset ++ "_" ++ targetVariable
-    model <- trainModel significanceLevel (Dataset.content dataset) targetVariable
-    return $ TrainingResult modelName targetVariable metaData model
+train :: TrainingParameters -> Dataset.Dataset -> Either String TrainingResult
+train trainingParameters dataset = do
+    let metaData = delete (targetVariable trainingParameters) $ Dataset.parameters dataset
+    let modelName = Dataset.name dataset ++ "_" ++ targetVariable trainingParameters
+    model <- trainModel trainingParameters (Dataset.content dataset)
+    return $ TrainingResult modelName trainingParameters metaData model
 
 {- DecisionTree construction functions -}
 
-trainModel :: Double -> [Map String Value] -> String -> Either String DecisionTree
-trainModel _ [] _                                           = Left "can't train based on empty data set"
-trainModel significanceLevel trainingData targetVariable    = do
-    let potentialFilters = getFilters $ map (delete targetVariable) trainingData
-    chosenFilter <- bestFilter significanceLevel trainingData targetVariable potentialFilters
-    constructTree significanceLevel trainingData targetVariable chosenFilter
+trainModel :: TrainingParameters -> [Map String Value] -> Either String DecisionTree
+trainModel _ []                             = Left "can't train based on empty data set"
+trainModel trainingParameters trainingData  = do
+    let potentialFilters = getFilters $ map (delete $ targetVariable trainingParameters) trainingData
+    chosenFilter <- bestFilter trainingParameters trainingData potentialFilters
+    constructTree trainingParameters trainingData chosenFilter
 
-constructTree :: Double -> [Map String Value] -> String -> Filter -> Either String DecisionTree
-constructTree significanceLevel trainingData targetVariable fil =
-    if informationGain trainingData (parseFilter fil) < entropyLimit
-        then constructAnswer targetVariable trainingData
+constructTree :: TrainingParameters -> [Map String Value] -> Filter -> Either String DecisionTree
+constructTree trainingParameters trainingData fil =
+    if informationGain trainingData (parseFilter fil) < entropyLimit trainingParameters
+        then constructAnswer (targetVariable trainingParameters) trainingData
         else do
             let passedTData = filter (parseFilter fil) trainingData
             let failedTData = filter (not . parseFilter fil) trainingData
-            affirmativeTree <- trainModel significanceLevel passedTData targetVariable
-            negativeTree <- trainModel significanceLevel failedTData targetVariable
+            affirmativeTree <- trainModel trainingParameters passedTData
+            negativeTree <- trainModel trainingParameters failedTData
             return $ Question fil affirmativeTree negativeTree
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
@@ -90,10 +109,10 @@ constructAnswer targetVariable rawData = do
 
 {- filter evaluating functions -}
 
-bestFilter :: Double -> [Map String Value] -> String -> [Filter] -> Either String Filter
-bestFilter significanceLevel trainingData targetVariable potentialFilters = do
-    let goodFilters = filterFilters significanceLevel trainingData targetVariable potentialFilters
-    filterEntropyPairs <- mapM (getEntropy trainingData targetVariable) goodFilters
+bestFilter :: TrainingParameters -> [Map String Value] -> [Filter] -> Either String Filter
+bestFilter trainingParameters trainingData potentialFilters = do
+    let goodFilters = filterFilters trainingParameters trainingData potentialFilters
+    filterEntropyPairs <- mapM (getEntropy trainingData $ targetVariable trainingParameters) goodFilters
     let (_, bestFilter) = minimumBy (compare `on` fst) filterEntropyPairs
     return bestFilter
 
@@ -106,7 +125,7 @@ extractTrainingData :: String -> [Map String a] -> Either String [a]
 extractTrainingData targetVariable = maybe missingKey Right . mapM (Data.Map.lookup targetVariable)
     where   missingKey  = Left $ "missing targetVariable in data: " ++ targetVariable
 
-filterFilters :: Double -> [Map String Value] -> String -> [Filter] -> [Filter]
-filterFilters significanceLevel trainingData targetVariable = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
+filterFilters :: TrainingParameters -> [Map String Value] -> [Filter] -> [Filter]
+filterFilters trainingParameters trainingData = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
     where   hasAnyMatches               = not . null . flip filter trainingData . parseFilter
-            isStatisticallySignificant  = statisticallySignificant significanceLevel trainingData targetVariable . parseFilter
+            isStatisticallySignificant  = statisticallySignificant (significanceLevel trainingParameters) trainingData (targetVariable trainingParameters) . parseFilter
