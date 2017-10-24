@@ -1,11 +1,11 @@
 
 const evaluate = (name, params, cb) =>
-    fetch('/api/model/' + name + '/evaluate', {
+    fetch(`/api/model/${name}/evaluate`, {
         method: 'POST',
-        body: JSON.stringify(params)
+        body: JSON.stringify(params),
     })
-    .then(res => res.json())
-    .then(res => cb(res.answer))
-    .catch(console.log)
+        .then(res => res.json())
+        .then(res => cb(res.answer))
+        .catch(console.log)
 
-export default evaluate;
+export default evaluate

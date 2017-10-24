@@ -1,5 +1,5 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from 'react'
+import styled from 'styled-components'
 
 const Padded = styled.div`
     padding-top: 0.1rem;
@@ -10,25 +10,24 @@ const RightJustifiedSelect = styled.select`
     float: right;
 `
 
-const VariableSelect = props => {
-
+const VariableSelect = (props) => {
     const options = props.options.map((option, i) =>
-        <option
+        (<option
             key={props.displayOption(option)}
-            value={i}>
+            value={i}
+        >
             {props.displayOption(option)}
-        </option>
-    )
+         </option>))
 
-    return <Padded>
+    return (<Padded>
         {props.text}
         <RightJustifiedSelect
             value={props.selectedDataset}
-            onChange={props.onChange}>
+            onChange={props.onChange}
+        >
             {options}
         </RightJustifiedSelect>
-    </Padded>
-
+            </Padded>)
 }
 
 export default VariableSelect

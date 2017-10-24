@@ -1,10 +1,10 @@
 
 const deleteDataset = cb => name =>
-    fetch('/api/dataset/' + name, {
-        method: 'DELETE'
+    fetch(`/api/dataset/${name}`, {
+        method: 'DELETE',
     })
-    .then(res => res.json())
-    .then(cb)
-    .catch(console.log)
+        .then(res => res.json())
+        .then(cb)
+        .catch(console.log)
 
-export default deleteDataset;
+export default deleteDataset

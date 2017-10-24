@@ -1,7 +1,7 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from 'react'
+import styled from 'styled-components'
 
-import Rounded from './rounded.js';
+import Rounded from './rounded.jsx'
 
 const Styled = styled.div`
     cursor: pointer;
@@ -11,10 +11,11 @@ const Styled = styled.div`
 const Button = props => (
     <Rounded>
         <Styled
-            onClick={props.action}>
+            onClick={props.action}
+        >
             {props.label}
         </Styled>
     </Rounded>
 )
 
-export default Button;
+export default Button

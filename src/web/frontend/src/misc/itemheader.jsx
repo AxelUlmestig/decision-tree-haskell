@@ -1,5 +1,5 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from 'react'
+import styled from 'styled-components'
 
 const Wrapper = styled.div`
     position: relative;
@@ -28,9 +28,9 @@ const ItemHeader = props => (
         <TextContent>{props.text}</TextContent>
         <DeleteButton
             src={require('../static/delete-button.png')}
-            onClick={props.close}>
-        </DeleteButton>
+            onClick={props.close}
+        />
     </Wrapper>
 )
 
-export default ItemHeader;
+export default ItemHeader

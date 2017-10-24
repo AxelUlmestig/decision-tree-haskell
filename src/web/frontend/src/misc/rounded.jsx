@@ -1,5 +1,4 @@
-import React from 'react';
-import styled from 'styled-components';
+import styled from 'styled-components'
 
 const Rounded = styled.div`
     border: solid;
@@ -11,4 +10,4 @@ const Rounded = styled.div`
     padding: 0.3rem;
 `
 
-export default Rounded;
+export default Rounded

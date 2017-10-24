@@ -1,5 +1,5 @@
-import React from 'react';
-import styled from 'styled-components';
+import React from 'react'
+import styled from 'styled-components'
 
 const HeaderWrapper = styled.div`
     text-align: center;
@@ -18,4 +18,4 @@ const SectionHeader = props => (
     </HeaderWrapper>
 )
 
-export default SectionHeader;
+export default SectionHeader
