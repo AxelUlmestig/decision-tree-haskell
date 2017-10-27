@@ -71,7 +71,7 @@ class Model extends misc.FunctionalComponent {
                             )}
                         />))}
                     <ModelParameter
-                        name={this.props.model.target}
+                        name={this.props.model.trainingParameters.targetVariable}
                         type="text"
                         value={this.state.result}
                         disabled="disabled"
