@@ -42,9 +42,15 @@ export default class Train extends misc.FunctionalComponent {
     }
 
     componentWillReceiveProps(props) {
+
+        if(props.datasets.length === 0) return;
+
+        const firstDataset = props.datasets[0];
+        const firstParameter = Object.keys(firstDataset.parameters)[0]
+
         this.setState(() => ({
-            selectedDataset: props.datasets[0],
-            selectedVar: Object.keys(props.datasets[0].parameters)[0],
+            selectedDataset: firstDataset,
+            selectedVar: firstParameter,
         }))
     }
 
