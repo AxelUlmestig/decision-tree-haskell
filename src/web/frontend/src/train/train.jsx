@@ -1,4 +1,5 @@
 import React from 'react'
+import R from 'ramda'
 
 import misc from '../misc/misc.js'
 import SectionHeader from '../misc/sectionheader.jsx'
@@ -29,7 +30,7 @@ const train = () => (state, props) => {
     return state
 }
 
-export default class Train extends misc.FunctionalComponent {
+export default class Train extends React.Component {
     constructor(props) {
         super(props)
         const emptyDataset = { name: '', parameters: [] }
@@ -39,6 +40,8 @@ export default class Train extends misc.FunctionalComponent {
             selectedDataset,
             selectedVar,
         }
+
+        this.setState = this.setState.bind(this)
     }
 
     componentWillReceiveProps(props) {
@@ -64,17 +67,32 @@ export default class Train extends misc.FunctionalComponent {
                         options={this.props.datasets}
                         displayOption={dataset => dataset.name}
                         value={this.selectedDataset}
-                        onChange={this.update(handleDatasetChange)}
+                        onChange={
+                            R.compose(
+                                this.setState,
+                                handleDatasetChange
+                            )
+                        }
                     />
                     <VariableSelect
                         text="Choose variable to train on:"
                         options={Object.keys(this.state.selectedDataset.parameters)}
                         displayOption={param => param}
                         value={this.selectedVar}
-                        onChange={this.update(handleVarChange)}
+                        onChange={
+                            R.compose(
+                                this.setState,
+                                handleVarChange
+                            )
+                        }
                     />
                 </Rounded>
-                <Button label="Train" action={this.update(train)} />
+                <Button label="Train" action={
+                    R.compose(
+                        this.setState,
+                        train
+                    )
+                } />
             </div>
         )
     }

@@ -1,5 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
+import R from 'ramda'
 
 import misc from '../misc/misc.js'
 import SectionHeader from '../misc/sectionheader.jsx'
@@ -29,7 +30,7 @@ const defaultValues = {
     STRING: '',
 }
 
-class Model extends misc.FunctionalComponent {
+class Model extends React.Component {
     constructor(props) {
         super()
 
@@ -47,6 +48,7 @@ class Model extends misc.FunctionalComponent {
             result: '',
         }
 
+        this.setState = this.setState.bind(this)
         this.evaluate = this.evaluate.bind(this)
     }
 
@@ -66,7 +68,10 @@ class Model extends misc.FunctionalComponent {
                             type={parameters[param].type}
                             value={parameters[param].value}
                             onChange={misc.getEventValue(
-                                this.update(updateParameter(param)),
+                                R.compose(
+                                    this.setState,
+                                    updateParameter(param)
+                                ),
                                 parameters[param].type,
                             )}
                         />))}

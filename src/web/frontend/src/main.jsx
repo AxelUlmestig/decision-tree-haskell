@@ -1,7 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
-
-import misc from './misc/misc'
+import R from 'ramda'
 
 import Datasets from './datasets/datasets.jsx'
 import Models from './models/models.jsx'
@@ -32,24 +31,26 @@ const MainColumn = styled.div`
     margin-right: auto;
 `
 
-class Main extends misc.FunctionalComponent {
+class Main extends React.Component {
     constructor() {
         super()
         this.state = {
             datasets: [],
             models: [],
         }
+
+        this.setState = this.setState.bind(this)
     }
 
     componentDidMount() {
         fetch('/api/model/')
             .then(res => res.json())
-            .then(this.setVariable('models'))
+            .then(R.compose(this.setState, R.assoc('models')))
             .catch(console.error)
 
         fetch('/api/dataset/')
             .then(res => res.json())
-            .then(this.setVariable('datasets'))
+            .then(R.compose(this.setState, R.assoc('datasets')))
             .catch(console.error)
     }
 
@@ -58,17 +59,47 @@ class Main extends misc.FunctionalComponent {
             <MainColumn>
                 <Datasets
                     datasets={this.state.datasets}
-                    uploadDataset={uploadDataset(this.update(addDataset))}
-                    deleteDataset={deleteDataset(res => this.setVariable('datasets')(res.remaining))}
+                    uploadDataset={
+                        uploadDataset(
+                            R.compose(
+                                this.setState,
+                                addDataset
+                            )
+                        )
+                    }
+                    deleteDataset={
+                        deleteDataset(
+                            R.compose(
+                                this.setState,
+                                R.assoc('datasets'),
+                                R.path(['remaining'])
+                            )
+                        )
+                    }
                 />
                 <Train
                     datasets={this.state.datasets}
-                    train={train(this.update(addModel))}
+                    train={
+                        train(
+                            R.compose(
+                                this.setState,
+                                addModel
+                            )
+                        )
+                    }
                 />
                 <Models
                     models={this.state.models}
                     evaluate={evaluate}
-                    deleteModel={deleteModel(res => this.setVariable('models')(res.remaining))}
+                    deleteModel={
+                        deleteModel(
+                            R.compose(
+                                this.setState,
+                                R.assoc('models'),
+                                R.path(['remaining'])
+                            )
+                        )
+                    }
                 />
             </MainColumn>
         )
