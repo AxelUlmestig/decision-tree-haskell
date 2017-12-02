@@ -2,8 +2,8 @@ import React from 'react'
 import styled from 'styled-components'
 import R from 'ramda'
 
-import Datasets from './datasets/datasets.jsx'
-import Models from './models/models.jsx'
+import Datasets from './datasets/datasets'
+import Models from './models/models'
 import Train from './train/train'
 
 import uploadDataset from './communication/uploaddataset'
@@ -60,45 +60,23 @@ class Main extends React.Component {
                 <Datasets
                     datasets={this.state.datasets}
                     uploadDataset={
-                        uploadDataset(
-                            R.compose(
-                                this.setState,
-                                addDataset
-                            )
-                        )
+                        uploadDataset(R.compose(this.setState, addDataset))
                     }
                     deleteDataset={
-                        deleteDataset(
-                            R.compose(
-                                this.setState,
-                                R.assoc('datasets'),
-                                R.path(['remaining'])
-                            )
-                        )
+                        deleteDataset(R.compose(this.setState, R.assoc('datasets'), R.path(['remaining'])))
                     }
                 />
                 <Train
                     datasets={this.state.datasets}
                     train={
-                        train(
-                            R.compose(
-                                this.setState,
-                                addModel
-                            )
-                        )
+                        train(R.compose(this.setState, addModel))
                     }
                 />
                 <Models
                     models={this.state.models}
                     evaluate={evaluate}
                     deleteModel={
-                        deleteModel(
-                            R.compose(
-                                this.setState,
-                                R.assoc('models'),
-                                R.path(['remaining'])
-                            )
-                        )
+                        deleteModel(R.compose(this.setState, R.assoc('models'), R.path(['remaining'])))
                     }
                 />
             </MainColumn>

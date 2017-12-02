@@ -1,5 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
+import PropTypes from 'prop-types'
 
 const HeaderWrapper = styled.div`
     text-align: center;
@@ -17,5 +18,9 @@ const SectionHeader = props => (
         <Header>{props.value}</Header>
     </HeaderWrapper>
 )
+
+SectionHeader.propTypes = {
+    value: PropTypes.string.isRequired,
+}
 
 export default SectionHeader

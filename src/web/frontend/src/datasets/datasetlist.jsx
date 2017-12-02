@@ -1,8 +1,8 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import Rounded from '../misc/rounded.jsx'
-import ItemHeader from '../misc/itemheader.jsx'
+import Rounded from '../misc/rounded'
+import ItemHeader from '../misc/itemheader'
 
 const DatasetList = props =>
     (

@@ -1,11 +1,12 @@
 import React from 'react'
+import PropTypes from 'prop-types'
 import R from 'ramda'
 
-import misc from '../misc/misc.js'
-import SectionHeader from '../misc/sectionheader.jsx'
-import Button from '../misc/button.jsx'
-import Rounded from '../misc/rounded.jsx'
-import VariableSelect from './variableselect.jsx'
+import misc from '../misc/misc'
+import SectionHeader from '../misc/sectionheader'
+import Button from '../misc/button'
+import Rounded from '../misc/rounded'
+import VariableSelect from './variableselect'
 
 const handleVarChange = misc.getEventValue(i => state =>
     ({
@@ -22,15 +23,14 @@ const handleDatasetChange = misc.getEventValue(i => (state, props) => {
 })
 
 const train = () => (state, props) => {
-    const selectedDataset = state.selectedDataset
-    const selectedVar = state.selectedVar
+    const { selectedDataset, selectedVar } = state
     if (selectedDataset && selectedVar) {
         props.train(selectedDataset.name, selectedVar)
     }
     return state
 }
 
-export default class Train extends React.Component {
+class Train extends React.Component {
     constructor(props) {
         super(props)
         const emptyDataset = { name: '', parameters: [] }
@@ -38,17 +38,16 @@ export default class Train extends React.Component {
         const selectedVar = Object.keys(selectedDataset.parameters)[0] || ''
         this.state = {
             selectedDataset,
-            selectedVar,
+            selectedVar, // eslint-disable-line react/no-unused-state
         }
 
         this.setState = this.setState.bind(this)
     }
 
     componentWillReceiveProps(props) {
+        if (props.datasets.length === 0) return
 
-        if(props.datasets.length === 0) return;
-
-        const firstDataset = props.datasets[0];
+        const firstDataset = props.datasets[0]
         const firstParameter = Object.keys(firstDataset.parameters)[0]
 
         this.setState(() => ({
@@ -70,7 +69,7 @@ export default class Train extends React.Component {
                         onChange={
                             R.compose(
                                 this.setState,
-                                handleDatasetChange
+                                handleDatasetChange,
                             )
                         }
                     />
@@ -82,18 +81,29 @@ export default class Train extends React.Component {
                         onChange={
                             R.compose(
                                 this.setState,
-                                handleVarChange
+                                handleVarChange,
                             )
                         }
                     />
                 </Rounded>
-                <Button label="Train" action={
-                    R.compose(
-                        this.setState,
-                        train
-                    )
-                } />
+                <Button
+                    label="Train"
+                    action={
+                        R.compose(
+                            this.setState,
+                            train,
+                        )
+                    }
+                />
             </div>
         )
     }
 }
+
+Train.propTypes = {
+    datasets: PropTypes.arrayOf({
+        parameters: PropTypes.object,
+    }).isRequired,
+}
+
+export default Train

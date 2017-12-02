@@ -1,5 +1,6 @@
 import React from 'react'
 import styled from 'styled-components'
+import PropTypes from 'prop-types'
 
 const Wrapper = styled.div`
     position: relative;
@@ -27,10 +28,15 @@ const ItemHeader = props => (
     <Wrapper>
         <TextContent>{props.text}</TextContent>
         <DeleteButton
-            src={require('../static/delete-button.png')}
+            src={require('../static/delete-button.png')} // eslint-disable-line global-require
             onClick={props.close}
         />
     </Wrapper>
 )
+
+ItemHeader.propTypes = {
+    text: PropTypes.string.isRequired,
+    close: PropTypes.func.isRequired,
+}
 
 export default ItemHeader

@@ -1,9 +1,9 @@
 import React from 'react'
 import PropTypes from 'prop-types'
 
-import SectionHeader from '../misc/sectionheader.jsx'
-import UploadButton from './uploadbutton.jsx'
-import DatasetList from './datasetlist.jsx'
+import SectionHeader from '../misc/sectionheader'
+import UploadButton from './uploadbutton'
+import DatasetList from './datasetlist'
 
 const Datasets = props => (
     <div>
