@@ -5,19 +5,18 @@ import Button from '../misc/button'
 
 const inputId = 'dataset_file'
 
-const handleFileInternal = handleFile => (input) => {
-    const { target: files } = input
+const handleFileInternal = handleFile => () => {
+    const file = document.getElementById(inputId).files[0]
 
     const fr = new FileReader()
 
     fr.onload = (e) => {
-        const filename = files[0].name
-        const setname = filename.match(/(.*).json$/)[1]
+        const setname = file.name.match(/(.*).json$/)[1]
         const dataset = JSON.parse(e.target.result)
 
         handleFile(dataset, setname)
     }
-    fr.readAsText(files[0])
+    fr.readAsText(file)
 }
 
 const UploadButton = props => (
