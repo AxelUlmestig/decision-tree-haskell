@@ -40,6 +40,11 @@ class Main extends React.Component {
         }
 
         this.setState = this.setState.bind(this)
+
+        this.uploadDataset = uploadDataset(R.compose(this.setState, addDataset))
+        this.deleteDataset = deleteDataset(R.compose(this.setState, R.assoc('datasets'), R.path(['remaining'])))
+        this.train = train(R.compose(this.setState, addModel))
+        this.deleteModel = deleteModel(R.compose(this.setState, R.assoc('models'), R.path(['remaining'])))
     }
 
     componentDidMount() {
@@ -59,25 +64,17 @@ class Main extends React.Component {
             <MainColumn>
                 <Datasets
                     datasets={this.state.datasets}
-                    uploadDataset={
-                        uploadDataset(R.compose(this.setState, addDataset))
-                    }
-                    deleteDataset={
-                        deleteDataset(R.compose(this.setState, R.assoc('datasets'), R.path(['remaining'])))
-                    }
+                    uploadDataset={this.uploadDataset}
+                    deleteDataset={this.deleteDataset}
                 />
                 <Train
                     datasets={this.state.datasets}
-                    train={
-                        train(R.compose(this.setState, addModel))
-                    }
+                    train={this.train}
                 />
                 <Models
                     models={this.state.models}
                     evaluate={evaluate}
-                    deleteModel={
-                        deleteModel(R.compose(this.setState, R.assoc('models'), R.path(['remaining'])))
-                    }
+                    deleteModel={this.deleteModel}
                 />
             </MainColumn>
         )
