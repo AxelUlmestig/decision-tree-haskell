@@ -1,4 +1,6 @@
 import React from 'react'
+import PropTypes from 'prop-types'
+import { Provider, connect } from 'react-redux'
 import styled from 'styled-components'
 import R from 'ramda'
 
@@ -6,20 +8,27 @@ import Datasets from './datasets/datasets'
 import Models from './models/models'
 import Train from './train/train'
 
+import Store from './store'
+import { addDataset, overwriteDatasets } from './actions/datasets'
+import { addModel, overwriteModels } from './actions/models'
 import uploadDataset from './communication/uploaddataset'
 import deleteDataset from './communication/deletedataset'
 import evaluate from './communication/evaluate'
 import train from './communication/train'
 import deleteModel from './communication/deletemodel'
 
-const addModel = model => state =>
+const mapStateToProps = state =>
     ({
-        models: state.models.concat([model]),
+        datasets: state.datasets,
+        models: state.models,
     })
 
-const addDataset = dataset => state =>
+const mapDispatchToProps = dispatch =>
     ({
-        datasets: state.datasets.concat([dataset]),
+        setDatasets: R.compose(dispatch, overwriteDatasets),
+        addDataset: R.compose(dispatch, addDataset),
+        setModels: R.compose(dispatch, overwriteModels),
+        addModel: R.compose(dispatch, addModel),
     })
 
 const MainColumn = styled.div`
@@ -32,30 +41,24 @@ const MainColumn = styled.div`
 `
 
 class Main extends React.Component {
-    constructor() {
+    constructor(props) {
         super()
-        this.state = {
-            datasets: [],
-            models: [],
-        }
 
-        this.setState = this.setState.bind(this)
-
-        this.uploadDataset = uploadDataset(R.compose(this.setState, addDataset))
-        this.deleteDataset = deleteDataset(R.compose(this.setState, R.assoc('datasets'), R.path(['remaining'])))
-        this.train = train(R.compose(this.setState, addModel))
-        this.deleteModel = deleteModel(R.compose(this.setState, R.assoc('models'), R.path(['remaining'])))
+        this.uploadDataset = uploadDataset(props.addDataset)
+        this.deleteDataset = deleteDataset(R.compose(props.setDatasets, R.path(['remaining'])))
+        this.train = train(props.addModel)
+        this.deleteModel = deleteModel(R.compose(props.setModels, R.path(['remaining'])))
     }
 
     componentDidMount() {
         fetch('/api/model/')
             .then(res => res.json())
-            .then(R.compose(this.setState, R.assoc('models')))
+            .then(this.props.setModels)
             .catch(console.error)
 
         fetch('/api/dataset/')
             .then(res => res.json())
-            .then(R.compose(this.setState, R.assoc('datasets')))
+            .then(this.props.setDatasets)
             .catch(console.error)
     }
 
@@ -63,16 +66,16 @@ class Main extends React.Component {
         return (
             <MainColumn>
                 <Datasets
-                    datasets={this.state.datasets}
+                    datasets={this.props.datasets}
                     uploadDataset={this.uploadDataset}
                     deleteDataset={this.deleteDataset}
                 />
                 <Train
-                    datasets={this.state.datasets}
+                    datasets={this.props.datasets}
                     train={this.train}
                 />
                 <Models
-                    models={this.state.models}
+                    models={this.props.models}
                     evaluate={evaluate}
                     deleteModel={this.deleteModel}
                 />
@@ -81,4 +84,30 @@ class Main extends React.Component {
     }
 }
 
-export default Main
+Main.propTypes = {
+    datasets: PropTypes.arrayOf(PropTypes.shape({
+        content: PropTypes.array,
+        name: PropTypes.string,
+        parameters: PropTypes.object,
+    })).isRequired,
+    setDatasets: PropTypes.func.isRequired,
+    addDataset: PropTypes.func.isRequired,
+    models: PropTypes.arrayOf(PropTypes.shape({
+        name: PropTypes.string,
+        trainingParameters: PropTypes.object,
+        parameters: PropTypes.object,
+        metaData: PropTypes.object,
+        model: PropTypes.object,
+    })).isRequired,
+    addModel: PropTypes.func.isRequired,
+    setModels: PropTypes.func.isRequired,
+}
+
+const ConnectedMain = connect(mapStateToProps, mapDispatchToProps)(Main)
+
+export default () =>
+    (
+        <Provider store={Store}>
+            <ConnectedMain />
+        </Provider>
+    )
