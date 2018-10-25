@@ -3,14 +3,16 @@
 
 module Filter (
     Filter(..),
+    Operator(..),
     parseFilter
 ) where
 
 import Data.Aeson.Types
-import qualified Data.Map
+import Data.Map             (Map, lookup)
+import Prelude              hiding (Map, lookup)
 
 data Filter = NullFilter | Filter {
-    operator    :: String,
+    operator    :: Operator,
     value       :: Value,
     key         :: String
 } deriving (Eq, Show)
@@ -28,25 +30,43 @@ instance FromJSON Filter where
         key         <- f .: "key"
         return Filter{..}
 
-parseFilter :: Filter -> Data.Map.Map String Value -> Bool
+data Operator =
+    EqOperator  |
+    NeqOperator |
+    GtOperator  |
+    LtOperator
+    deriving (Eq, Show)
+
+instance ToJSON Operator where
+    toJSON EqOperator  = "="
+    toJSON NeqOperator = "!="
+    toJSON GtOperator  = ">"
+    toJSON LtOperator  = "<"
+
+instance FromJSON Operator where
+    parseJSON "="   = return EqOperator
+    parseJSON "!="  = return NeqOperator
+    parseJSON ">"   = return GtOperator
+    parseJSON "<"   = return LtOperator
+    parseJSON _     = fail ""
+
+parseFilter :: Filter -> Map String Value -> Bool
 parseFilter f = maybe False id . parseFilterInternal f
 
-parseFilterInternal :: Filter -> Data.Map.Map String Value -> Maybe Bool
-parseFilterInternal NullFilter _ = Just True
-parseFilterInternal f sample
-    | operator f == "="     = (== value f) <$> Data.Map.lookup (key f) sample
-    | operator f == "!="    = (/= value f) <$> Data.Map.lookup (key f) sample
-    | operator f == "<"     = do
-        sampleValue <- Data.Map.lookup (key f) sample
-        parsedValue <- parseNumber sampleValue
-        filterValue <- parseNumber (value f)
-        return (parsedValue < filterValue)
-    | operator f == ">"     = do
-        sampleValue <- Data.Map.lookup (key f) sample
-        parsedValue <- parseNumber sampleValue
-        filterValue <- parseNumber (value f)
-        return (parsedValue > filterValue)
-    | otherwise             = error $ "invalid filter operator: " ++ operator f
+parseFilterInternal :: Filter -> Map String Value -> Maybe Bool
+parseFilterInternal NullFilter _                    = Just True
+parseFilterInternal (Filter EqOperator val key) sample     = (== val) <$> lookup key sample
+parseFilterInternal (Filter NeqOperator val key) sample    = (/= val) <$> lookup key sample
+parseFilterInternal (Filter LtOperator val key) sample     = do
+    sampleValue <- lookup key sample
+    parsedValue <- parseNumber sampleValue
+    filterValue <- parseNumber val
+    return (parsedValue < filterValue)
+parseFilterInternal (Filter GtOperator val key) sample     = do
+    sampleValue <- lookup key sample
+    parsedValue <- parseNumber sampleValue
+    filterValue <- parseNumber val
+    return (parsedValue > filterValue)
 
 parseNumber :: Value -> Maybe Float
 parseNumber = parseMaybe parseJSON

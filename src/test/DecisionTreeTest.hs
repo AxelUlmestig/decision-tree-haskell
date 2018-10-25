@@ -29,7 +29,7 @@ decisionTree4 = TestCase $ assertEqual "two options, pass filter" expected actua
     where   actual      = askTree tree $ singleton "key" "value"
             expected    = posAnswer
             tree        = Question fil (Answer posAnswer) (Answer negAnswer)
-            fil         = Filter "=" (String "value") "key"
+            fil         = Filter EqOperator (String "value") "key"
             posAnswer   = DecisionTreeResult (String "pos answer") 1 1
             negAnswer   = DecisionTreeResult (String "neg answer") 1 1
 
@@ -37,7 +37,7 @@ decisionTree5 = TestCase $ assertEqual "two layers" expected actual
     where   actual      = askTree tree $ singleton "key" "value"
             tree        = Question fil tree2 (Answer negAnswer)
             tree2       = Question fil (Answer expected) (Answer negAnswer)
-            fil         = Filter "=" (String "value") "key"
+            fil         = Filter EqOperator (String "value") "key"
             expected    = DecisionTreeResult (String "pos answer") 1 1
             negAnswer   = DecisionTreeResult (String "neg answer") 1 1
 

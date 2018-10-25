@@ -14,8 +14,8 @@ import Filter
 import GetMetaData
 
 getTypeFilters :: DataType -> [Value] -> [String -> Filter]
-getTypeFilters StringType values = map (Filter "=") values ++ map (Filter "!=") values
-getTypeFilters NumberType values = map (Filter ">") . prune (length values `quot` 3) . sortBy numValue $ values
+getTypeFilters StringType values = map (Filter EqOperator) values ++ map (Filter NeqOperator) values
+getTypeFilters NumberType values = map (Filter GtOperator) . prune (length values `quot` 3) . sortBy numValue $ values
     where   numValue (Number v1) (Number v2) = compare v1 v2
             numValue _ _ = GT
 
