@@ -6,6 +6,7 @@ module Train (
     TrainingResult(..)
 ) where
 
+import Control.Parallel (par, pseq)
 import Data.Aeson
 import Data.Map (delete, findWithDefault, Map)
 import qualified Data.Map (lookup)
@@ -96,7 +97,7 @@ constructTree trainingParameters trainingData fil =
             let failedTData = filter (not . parseFilter fil) trainingData
             affirmativeTree <- trainModel trainingParameters passedTData
             negativeTree <- trainModel trainingParameters failedTData
-            return $ Question fil affirmativeTree negativeTree
+            return $ parallelize (Question fil) affirmativeTree negativeTree
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
 constructAnswer _ []        = Left "can't construct Answer from empty data set"
@@ -129,3 +130,13 @@ filterFilters :: TrainingParameters -> [Map String Value] -> [Filter] -> [Filter
 filterFilters trainingParameters trainingData = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
     where   hasAnyMatches               = not . null . flip filter trainingData . parseFilter
             isStatisticallySignificant  = statisticallySignificant (significanceLevel trainingParameters) trainingData (targetVariable trainingParameters) . parseFilter
+
+{- parallelization -}
+
+parallelize :: (DecisionTree -> DecisionTree -> DecisionTree) -> DecisionTree -> DecisionTree -> DecisionTree
+parallelize f dt1 dt2 = evaluateTree dt1 `par` (evaluateTree dt2 `pseq` f dt1 dt2)
+
+evaluateTree :: DecisionTree -> ()
+evaluateTree (Question _ dt1 dt2)   = evaluateTree dt1 `mappend` evaluateTree dt2
+evaluateTree (Answer _)             = ()
+
