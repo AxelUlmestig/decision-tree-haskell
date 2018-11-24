@@ -1,6 +1,6 @@
 Docker setup
     Create image
-        $ sudo docker build -t decisiontree .
+        $ sudo docker build -t decisiontree . --rm
 
     Run image
         $ sudo docker run -d -p 3000:3000 decisiontree
