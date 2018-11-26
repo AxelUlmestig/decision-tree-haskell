@@ -6,11 +6,12 @@ module DecisionTree (
     askTree
 ) where
 
+import Control.DeepSeq      (NFData, rnf)
+import Control.Applicative  ((<**>))
 import Data.Aeson           ((.:), (.=), FromJSON, object, pairs, parseJSON, toEncoding, ToJSON, toJSON, Value, withObject)
 import Data.Map             (Map)
 import Data.Monoid          ((<>))
 import Data.Foldable        (asum)
-import Control.Applicative  ((<**>))
 
 import Filter               (Filter, parseFilter)
 
@@ -42,6 +43,10 @@ instance FromJSON DecisionTree where
             Question <$> dt .: "question" <*> dt .: "positiveResponse" <*> dt .: "negativeResponse"
         ]
 
+instance NFData DecisionTree where
+    rnf (Answer dtr)            = rnf dtr
+    rnf (Question fil dt1 dt2)  = rnf fil `mappend` rnf dt1 `mappend` rnf dt2
+
 data DecisionTreeResult = DecisionTreeResult {
     answer      :: Value,
     confidence  :: Float,
@@ -59,6 +64,9 @@ instance ToJSON DecisionTreeResult where
 instance FromJSON DecisionTreeResult where
     parseJSON = withObject "DecisionTreeResult" $ \o ->
         DecisionTreeResult <$> o .: "answer" <*> o .: "confidence" <*> o .: "sampleSize"
+
+instance NFData DecisionTreeResult where
+    rnf (DecisionTreeResult ans conf ss) = rnf ans `mappend` rnf conf `mappend` rnf ss
 
 askTree :: DecisionTree -> Map String Value -> DecisionTreeResult
 askTree (Answer dtr) _ = dtr

@@ -93,12 +93,14 @@ constructTree :: TrainingParameters -> [Map String Value] -> Filter -> Either St
 constructTree trainingParameters trainingData fil =
     if informationGain trainingData (parseFilter fil) < entropyLimit trainingParameters
         then constructAnswer (targetVariable trainingParameters) trainingData
-        else do
-            let passedTData = filter (parseFilter fil) trainingData
-            let failedTData = filter (not . parseFilter fil) trainingData
-            affirmativeTree <- trainModel trainingParameters passedTData
-            negativeTree <- trainModel trainingParameters failedTData
-            return $ parallelize (Question fil) affirmativeTree negativeTree
+        else
+            affirmativeTree `par` (negativeTree `pseq` Question fil <$> affirmativeTree <*> negativeTree)
+            where   affirmativeTree   = trainModel trainingParameters passedTData `using` rdeepseq
+                    negativeTree      = trainModel trainingParameters failedTData `using` rdeepseq
+                    passedTData       = filter (parseFilter fil) trainingData
+                    failedTData       = filter (not . parseFilter fil) trainingData
+
+
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
 constructAnswer _ []        = Left "can't construct Answer from empty data set"
@@ -133,13 +135,4 @@ filterFilters :: TrainingParameters -> [Map String Value] -> [Filter] -> [Filter
 filterFilters trainingParameters trainingData = (NullFilter:) . filter isStatisticallySignificant . filter hasAnyMatches
     where   hasAnyMatches               = not . null . flip filter trainingData . parseFilter
             isStatisticallySignificant  = statisticallySignificant (significanceLevel trainingParameters) trainingData (targetVariable trainingParameters) . parseFilter
-
-{- parallelization -}
-
-parallelize :: (DecisionTree -> DecisionTree -> DecisionTree) -> DecisionTree -> DecisionTree -> DecisionTree
-parallelize f dt1 dt2 = evaluateTree dt1 `par` (evaluateTree dt2 `pseq` f dt1 dt2)
-
-evaluateTree :: DecisionTree -> ()
-evaluateTree (Question _ dt1 dt2)   = evaluateTree dt1 `mappend` evaluateTree dt2
-evaluateTree (Answer _)             = ()
 
