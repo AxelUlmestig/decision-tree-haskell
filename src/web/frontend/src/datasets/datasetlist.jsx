@@ -22,6 +22,7 @@ DatasetList.propTypes = {
     datasets: PropTypes.arrayOf(PropTypes.shape({
         name: PropTypes.string,
     })).isRequired,
+    deleteDataset: PropTypes.func.isRequired,
 }
 
 export default DatasetList
