@@ -6,15 +6,17 @@ module DecisionTree (
     askTree
 ) where
 
-import Data.Aeson
-import Data.Map (Map)
-import Data.Monoid
-import Data.Foldable (asum)
-import Control.Applicative
+import Data.Aeson           ((.:), (.=), FromJSON, object, pairs, parseJSON, toEncoding, ToJSON, toJSON, Value, withObject)
+import Data.Map             (Map)
+import Data.Monoid          ((<>))
+import Data.Foldable        (asum)
+import Control.Applicative  ((<**>))
 
-import Filter
+import Filter               (Filter, parseFilter)
 
-data DecisionTree = Question Filter DecisionTree DecisionTree | Answer DecisionTreeResult
+data DecisionTree =
+    Question Filter DecisionTree DecisionTree |
+    Answer DecisionTreeResult
     deriving (Eq, Show)
 
 instance ToJSON DecisionTree where

@@ -4,14 +4,12 @@ module GetFilters (
     getFilters
 ) where
 
-import qualified Data.Map (map)
-import Data.Map (intersectionWith, Map, mapWithKey)
-import qualified Data.Set
-import Data.List (sortBy)
-import Data.Aeson
+import Data.Map     (intersectionWith, mapWithKey, Map)
+import Data.List    (sortBy)
+import Data.Aeson   (Value(Number))
 
-import Filter
-import GetMetaData
+import Filter       (Filter(Filter, NullFilter), Operator(EqOperator, GtOperator, NeqOperator))
+import GetMetaData  (DataType(NumberType, StringType), getDataTypes, structureData)
 
 getTypeFilters :: DataType -> [Value] -> [String -> Filter]
 getTypeFilters StringType values = map (Filter EqOperator) values ++ map (Filter NeqOperator) values

@@ -8,7 +8,7 @@ module Filter (
 ) where
 
 import Control.DeepSeq      (NFData, rnf)
-import Data.Aeson.Types
+import Data.Aeson.Types     ((.:), (.=), FromJSON, object, parseJSON, parseMaybe, toJSON, ToJSON, Value, withObject)
 import Data.Map             (Map, lookup)
 import Prelude              hiding (Map, lookup)
 

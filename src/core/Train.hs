@@ -8,21 +8,21 @@ module Train (
 
 import Control.Parallel             (par, pseq)
 import Control.Parallel.Strategies  (parListChunk, rdeepseq, using)
-import Data.Aeson
-import Data.Map                     (delete, findWithDefault, Map)
-import qualified Data.Map           (lookup)
-import Data.Monoid
+import Data.Aeson                   ((.:), (.=), FromJSON, fromJSON, object, pairs, parseJSON, toEncoding, ToJSON, toJSON, Value(Object))
+import Data.Map                     (delete, findWithDefault, lookup, Map)
+import Data.Monoid                  ((<>))
 import Data.List                    (group, maximumBy, minimumBy, sort)
 import Data.Function                (on)
-import Control.Applicative
+import Prelude                      hiding (lookup)
 
+import Dataset                      (Dataset)
 import qualified Dataset
-import DecisionTree
-import Filter
-import GetFilters
-import GetMetaData
-import Entropy
-import StatisticalSignificance
+import DecisionTree                 (DecisionTree(Answer, Question), DecisionTreeResult(DecisionTreeResult))
+import Entropy                      (entropy, informationGain)
+import Filter                       (Filter(Filter, NullFilter), parseFilter)
+import GetFilters                   (getFilters)
+import GetMetaData                  (DataType)
+import StatisticalSignificance      (statisticallySignificant)
 
 {- TrainingResult data type -}
 
@@ -73,7 +73,7 @@ instance FromJSON TrainingParameters where
 
 {- TrainingResult functions -}
 
-train :: TrainingParameters -> Dataset.Dataset -> Either String TrainingResult
+train :: TrainingParameters -> Dataset -> Either String TrainingResult
 train trainingParameters dataset = do
     let metaData = delete (targetVariable trainingParameters) $ Dataset.parameters dataset
     let modelName = Dataset.name dataset ++ "_" ++ targetVariable trainingParameters
@@ -126,7 +126,7 @@ getEntropy values targetVariable f = do
     return (entropy filteredValues, f)
 
 extractTrainingData :: String -> [Map String a] -> Either String [a]
-extractTrainingData targetVariable = maybe missingKey Right . mapM (Data.Map.lookup targetVariable)
+extractTrainingData targetVariable = maybe missingKey Right . mapM (lookup targetVariable)
     where   missingKey  = Left $ "missing targetVariable in data: " ++ targetVariable
 
 filterFilters :: TrainingParameters -> [Map String Value] -> [Filter] -> [Filter]

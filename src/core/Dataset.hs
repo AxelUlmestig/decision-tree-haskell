@@ -6,10 +6,10 @@ module Dataset (
     Dataset(..)
 ) where
 
-import Data.Aeson
-import Data.Map
+import Data.Aeson   ((.:), (.=), FromJSON, object, parseJSON, toJSON, ToJSON, Value, withObject)
+import Data.Map     (Map)
 
-import GetMetaData
+import GetMetaData  (DataType, getDataTypes, structureData)
 
 data Dataset = Dataset {
     name        :: String,

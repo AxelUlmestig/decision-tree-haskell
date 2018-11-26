@@ -6,10 +6,9 @@ module GetMetaData (
     DataType(..)
 ) where
 
-import Data.Aeson
-import Data.List (group, sort)
-import qualified Data.Map (map)
-import Data.Map (empty, Map, unionWith)
+import Data.Aeson   (FromJSON, parseJSON, toJSON, ToJSON, Value(Null, Number, String))
+import Data.List    (group, sort)
+import Data.Map     (empty, Map, unionWith)
 
 instance Ord Value where
     compare (String a) (String b)   = compare a b
@@ -19,12 +18,12 @@ instance Ord Value where
     compare Null Null               = EQ
     compare Null _                  = LT
     compare _ Null                  = GT
-    compare _ _ = EQ
+    compare _ _                     = EQ
 
 {- structureData functions -}
 
 structureData :: [Map String Value] -> Map String [Value]
-structureData = Data.Map.map rmdups . foldl (unionWith (++)) empty . map (Data.Map.map (:[]))
+structureData = fmap rmdups . foldl (unionWith (++)) empty . map (fmap (:[]))
 
 rmdups :: (Ord a) => [a] -> [a]
 rmdups = map head . group . sort
@@ -42,7 +41,7 @@ instance FromJSON DataType where
     parseJSON (String "NUMBER") = return NumberType
 
 getDataTypes :: Map String [Value] -> Map String DataType
-getDataTypes = Data.Map.map getDataType . Data.Map.map setDataTypes
+getDataTypes = fmap getDataType . fmap setDataTypes
     where   getDataType     = foldl prioritizeType NumberType
             setDataTypes    = map typeCheck
 
