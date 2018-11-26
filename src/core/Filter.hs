@@ -7,6 +7,7 @@ module Filter (
     parseFilter
 ) where
 
+import Control.DeepSeq      (NFData, rnf)
 import Data.Aeson.Types
 import Data.Map             (Map, lookup)
 import Prelude              hiding (Map, lookup)
@@ -49,6 +50,10 @@ instance FromJSON Operator where
     parseJSON ">"   = return GtOperator
     parseJSON "<"   = return LtOperator
     parseJSON _     = fail ""
+
+instance NFData Filter where
+    rnf NullFilter      = ()
+    rnf (Filter _ v k) = (rnf v) `mappend` (rnf k)
 
 parseFilter :: Filter -> Map String Value -> Bool
 parseFilter f = maybe False id . parseFilterInternal f

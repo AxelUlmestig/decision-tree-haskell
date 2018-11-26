@@ -6,13 +6,14 @@ module Train (
     TrainingResult(..)
 ) where
 
-import Control.Parallel (par, pseq)
+import Control.Parallel             (par, pseq)
+import Control.Parallel.Strategies  (parListChunk, rdeepseq, using)
 import Data.Aeson
-import Data.Map (delete, findWithDefault, Map)
-import qualified Data.Map (lookup)
+import Data.Map                     (delete, findWithDefault, Map)
+import qualified Data.Map           (lookup)
 import Data.Monoid
-import Data.List (group, maximumBy, minimumBy, sort)
-import Data.Function (on)
+import Data.List                    (group, maximumBy, minimumBy, sort)
+import Data.Function                (on)
 import Control.Applicative
 
 import qualified Dataset
@@ -113,9 +114,11 @@ constructAnswer targetVariable rawData = do
 bestFilter :: TrainingParameters -> [Map String Value] -> [Filter] -> Either String Filter
 bestFilter trainingParameters trainingData potentialFilters = do
     let goodFilters = filterFilters trainingParameters trainingData potentialFilters
-    filterEntropyPairs <- mapM (getEntropy trainingData $ targetVariable trainingParameters) goodFilters
+    let eitherEntropies = map calculateEntropy goodFilters `using` parListChunk 4 rdeepseq
+    filterEntropyPairs <- traverse id eitherEntropies
     let (_, bestFilter) = minimumBy (compare `on` fst) filterEntropyPairs
     return bestFilter
+        where   calculateEntropy = getEntropy trainingData $ targetVariable trainingParameters
 
 getEntropy :: [Map String Value] -> String -> Filter -> Either String (Float, Filter)
 getEntropy values targetVariable f = do
