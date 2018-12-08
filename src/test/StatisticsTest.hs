@@ -4,13 +4,12 @@ module StatisticsTest (
     tests
 ) where
 
-import Test.Framework.Providers.HUnit
-import Test.HUnit
-import Data.Aeson
-import Data.Map
-import Control.Applicative
+import Test.Framework.Providers.HUnit   (hUnitTestToTests)
+import Test.HUnit                       (Test(TestCase, TestLabel, TestList), assertEqual)
+import Data.Map                         (fromList, lookup, Map)
+import Prelude                          hiding (lookup)
 
-import StatisticalSignificance
+import StatisticalSignificance          (statisticallySignificant)
 
 {-
 This test is based on an example from this site
@@ -29,7 +28,7 @@ observedRedCars = repeat $ fromList [("colour", "red"), ("src", "observed")] :: 
 observedBlueCars = repeat $ fromList [("colour", "blue"), ("src", "observed")] :: [Map String String]
 
 hasAttribute :: String -> String -> Map String String -> Bool
-hasAttribute key value = maybe False (==value) . Data.Map.lookup key
+hasAttribute key value = maybe False (==value) . lookup key
 
 statistics1 = TestCase $ assertEqual "expected: 2/1, observed: 90/60, statistical significance: 0.1" expected actual
     where   expected        = True

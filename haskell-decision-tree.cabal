@@ -79,7 +79,8 @@ Test-Suite TestSuite
                        aeson,
                        containers,
                        statistics,
-                       parallel
+                       parallel,
+                       deepseq
   default-language:    Haskell2010
   ghc-options: -fno-warn-tabs -threaded -rtsopts
   other-modules:       Dataset
