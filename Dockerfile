@@ -14,11 +14,9 @@ WORKDIR /backend
 COPY . /backend
 
 RUN stack setup
-# static linking to be able to copy to 'alpine'
+# static linking to be able to copy to 'scratch'
 RUN stack build haskell-decision-tree:exe:server --copy-bins --local-bin-path . --ghc-options '-static -optc-static -optl-static -optl-pthread'
 
-# (almost) empty image with executables
-# bash seemed to be needed for some reason
 FROM scratch
 EXPOSE 3000
 
