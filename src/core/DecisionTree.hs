@@ -45,7 +45,7 @@ instance FromJSON DecisionTree where
 
 instance NFData DecisionTree where
     rnf (Answer dtr)            = rnf dtr
-    rnf (Question fil dt1 dt2)  = rnf fil `mappend` rnf dt1 `mappend` rnf dt2
+    rnf (Question fil dt1 dt2)  = rnf fil `seq` rnf dt1 `seq` rnf dt2
 
 data DecisionTreeResult = DecisionTreeResult {
     answer      :: Value,

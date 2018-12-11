@@ -6,8 +6,7 @@ module Train (
     TrainingResult(..)
 ) where
 
-import Control.Parallel             (par, pseq)
-import Control.Parallel.Strategies  (parListChunk, rdeepseq, using)
+import Control.Parallel.Strategies  (evalTraversable, parListChunk, rdeepseq, rparWith, Strategy, using)
 import Data.Aeson                   ((.:), (.=), FromJSON, fromJSON, object, pairs, parseJSON, toEncoding, ToJSON, toJSON, Value(Object))
 import Data.Map                     (delete, findWithDefault, lookup, Map)
 import Data.Monoid                  ((<>))
@@ -94,13 +93,18 @@ constructTree trainingParameters trainingData fil =
     if informationGain trainingData (parseFilter fil) < entropyLimit trainingParameters
         then constructAnswer (targetVariable trainingParameters) trainingData
         else
-            affirmativeTree `par` (negativeTree `pseq` Question fil <$> affirmativeTree <*> negativeTree)
-            where   affirmativeTree   = trainModel trainingParameters passedTData `using` rdeepseq
-                    negativeTree      = trainModel trainingParameters failedTData `using` rdeepseq
+            Question fil <$> affirmativeTree <*> negativeTree `using` evalTraversable parEvalTree
+            where   affirmativeTree   = trainModel trainingParameters passedTData
+                    negativeTree      = trainModel trainingParameters failedTData
                     passedTData       = filter (parseFilter fil) trainingData
                     failedTData       = filter (not . parseFilter fil) trainingData
 
-
+parEvalTree :: Strategy DecisionTree
+parEvalTree (Question f dt1 dt2) = do
+    dt1' <- rparWith rdeepseq dt1
+    dt2' <- rparWith rdeepseq dt2
+    return $ Question f dt1' dt2'
+parEvalTree ans = return ans
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
 constructAnswer _ []        = Left "can't construct Answer from empty data set"
