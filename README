@@ -6,10 +6,7 @@ Docker setup
         $ sudo docker run -d -p 3000:3000 decisiontree
 
 To run performance test:
-    $ stack exec -- performance-test +RTS -A200M -N2 -s
-
-    The test assumed that there exists a dataset "datasets/titanic_train_pruned.json".
+    $ stack exec -- performance-test +RTS -A200M -N -s -l
 
     While all sparks are converted it doesn't seem like they are run in parallel.
-    It might be because of my weak, 2-core machine.
 

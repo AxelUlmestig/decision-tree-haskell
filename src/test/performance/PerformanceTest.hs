@@ -24,4 +24,4 @@ main = do
     print ("time: " ++ show (diffUTCTime t1 t0))
 
 trainingParameters = TrainingParameters "Survived" 0.05 0.2 :: TrainingParameters
-dataset = fromJust . decode <$> LazyBS.readFile "./datasets/titanic_train_pruned.json" :: IO Dataset
+dataset = fromJust . decode <$> LazyBS.readFile "./datasets/performance-test-dataset.json" :: IO Dataset
