@@ -2,27 +2,28 @@
 
 This is a project for training decision trees.
 
-To build:  
+To build:
 `$ stack build`
+`$ ./build-frontend.sh`
 
-To run:  
+To run:
 `$ stack exec server`
 
 This will host a simple html page at `localhost:3000` where you can upload
 datasets and train trees using them. The uploaded datasets should be JSON
-arrays of objects e.g.  
+arrays of objects e.g.
 `[ { "name": "lisa", "cool": true}, { "name": "anna", "cool": false } ]`
 
 ### Docker Setup
 Create image
-`$ sudo docker build -t decisiontree . --rm`  
+`$ sudo docker build -t decisiontree . --rm`
 (This takes a _long_ time unfortunately)
 
-Run image  
+Run image
 `$ sudo docker run -d -p 3000:3000 decisiontree`
 
 ### Performance Test
-To run performance test:  
+To run performance test:
 `$ stack exec -- performance-test +RTS -A200M -N -s -l`
 
 There is currently some parallelism this project. Figuring out which questions
