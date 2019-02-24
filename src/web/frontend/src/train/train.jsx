@@ -52,7 +52,7 @@ class Train extends React.Component {
 
         this.setState(() => ({
             selectedDataset: firstDataset,
-            selectedVar: firstParameter,
+            selectedVar: firstParameter, // eslint-disable-line react/no-unused-state
         }))
     }
 
