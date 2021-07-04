@@ -6,30 +6,38 @@ module Train (
     TrainingResult(..)
 ) where
 
-import Control.Parallel.Strategies  (evalTraversable, parListChunk, rdeepseq, rparWith, Strategy, using)
-import Data.Aeson                   ((.:), (.=), FromJSON, fromJSON, object, pairs, parseJSON, toEncoding, ToJSON, toJSON, Value(Object))
-import Data.Map                     (delete, findWithDefault, lookup, Map)
-import Data.Monoid                  ((<>))
-import Data.List                    (group, maximumBy, minimumBy, sort)
-import Data.Function                (on)
-import Prelude                      hiding (lookup)
+import           Control.Parallel.Strategies (Strategy, evalTraversable,
+                                              parListChunk, parTuple2, rdeepseq,
+                                              rparWith, using)
+import           Data.Aeson                  (FromJSON, ToJSON, Value (Object),
+                                              fromJSON, object, pairs,
+                                              parseJSON, toEncoding, toJSON,
+                                              (.:), (.=))
+import           Data.Function               (on)
+import           Data.List                   (group, maximumBy, minimumBy, sort)
+import           Data.Map                    (Map, delete, findWithDefault,
+                                              lookup)
+import           Data.Monoid                 ((<>))
+import           Prelude                     hiding (lookup)
 
-import Dataset                      (Dataset)
+import           Dataset                     (Dataset)
 import qualified Dataset
-import DecisionTree                 (DecisionTree(Answer, Question), DecisionTreeResult(DecisionTreeResult))
-import Entropy                      (entropy, informationGain)
-import Filter                       (Filter(Filter, NullFilter), parseFilter)
-import GetFilters                   (getFilters)
-import GetMetaData                  (DataType)
-import StatisticalSignificance      (statisticallySignificant)
+import           DecisionTree                (DecisionTree (Answer, Question),
+                                              DecisionTreeResult (DecisionTreeResult))
+import           Entropy                     (entropy, informationGain)
+import           Filter                      (Filter (Filter, NullFilter),
+                                              parseFilter)
+import           GetFilters                  (getFilters)
+import           GetMetaData                 (DataType)
+import           StatisticalSignificance     (statisticallySignificant)
 
 {- TrainingResult data type -}
 
 data TrainingResult = TrainingResult {
-    name                :: String,
-    trainingParameters  :: TrainingParameters,
-    metaData            :: Map String DataType,
-    model               :: DecisionTree
+    name               :: String,
+    trainingParameters :: TrainingParameters,
+    metaData           :: Map String DataType,
+    model              :: DecisionTree
 } deriving (Eq, Show)
 
 instance ToJSON TrainingResult where
@@ -53,9 +61,9 @@ instance FromJSON TrainingResult where
 {- TrainingParameters data type -}
 
 data TrainingParameters = TrainingParameters {
-    targetVariable      :: String,
-    significanceLevel   :: Double,
-    entropyLimit        :: Float
+    targetVariable    :: String,
+    significanceLevel :: Double,
+    entropyLimit      :: Float
 } deriving (Eq, Show)
 
 instance ToJSON TrainingParameters where
@@ -91,20 +99,14 @@ trainModel trainingParameters trainingData  = do
 constructTree :: TrainingParameters -> [Map String Value] -> Filter -> Either String DecisionTree
 constructTree trainingParameters trainingData fil =
     if informationGain trainingData (parseFilter fil) < entropyLimit trainingParameters
-        then constructAnswer (targetVariable trainingParameters) trainingData
-        else
-            Question fil <$> affirmativeTree <*> negativeTree `using` evalTraversable parEvalTree
-            where   affirmativeTree   = trainModel trainingParameters passedTData
-                    negativeTree      = trainModel trainingParameters failedTData
-                    passedTData       = filter (parseFilter fil) trainingData
-                    failedTData       = filter (not . parseFilter fil) trainingData
-
-parEvalTree :: Strategy DecisionTree
-parEvalTree (Question f dt1 dt2) = do
-    dt1' <- rparWith rdeepseq dt1
-    dt2' <- rparWith rdeepseq dt2
-    return $ Question f dt1' dt2'
-parEvalTree ans = return ans
+    then constructAnswer (targetVariable trainingParameters) trainingData
+    else
+        Question fil <$> pAffTree <*> pNegTree
+        where   affirmativeTree       = trainModel trainingParameters passedTData
+                negativeTree          = trainModel trainingParameters failedTData
+                passedTData           = filter (parseFilter fil) trainingData
+                failedTData           = filter (not . parseFilter fil) trainingData
+                (pAffTree, pNegTree)  = (affirmativeTree, negativeTree) `using` parTuple2 rdeepseq rdeepseq
 
 constructAnswer :: String -> [Map String Value] -> Either String DecisionTree
 constructAnswer _ []        = Left "can't construct Answer from empty data set"
